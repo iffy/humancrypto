@@ -20,7 +20,7 @@ setup(
         'cryptography',
         'six',
     ],
-    # scripts=[
-    #     'scripts/humancrypto',
-    # ]
+    scripts=[
+        'scripts/humancrypto',
+    ]
 )
