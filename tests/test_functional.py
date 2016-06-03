@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import six
-from humancrypto import PrivateKey, PublicKey
+from humancrypto import PrivateKey, PublicKey, CSR
 
 
 class TestPrivateKey(object):
@@ -67,3 +67,24 @@ class TestPublicKey(object):
         fh.write(pub.serialize())
         pub2 = PublicKey.load(filename=fh.strpath)
         assert pub2.serialize() == pub.serialize()
+
+
+class TestCSR(object):
+
+    def test_create(self):
+        priv = PrivateKey.create()
+        csr = CSR.create(priv, {'common_name': u'bob', 'state': u'CA'})
+        assert csr.attribs['common_name'] == u'bob'
+        assert csr.attribs['state'] == u'CA'
+
+    def test_load(self):
+        priv = PrivateKey.create()
+        csr = CSR.create(priv, {'common_name': u'alice'})
+        csr2 = CSR.load(csr.serialize())
+        assert isinstance(csr2, CSR)
+        assert csr2.attribs['common_name'] == u'alice'
+
+    def test_multiple_value_attribs(self):
+        priv = PrivateKey.create()
+        csr = CSR.create(priv, {'common_name': [u'bob', u'sam']})
+        assert csr.attribs['common_name'] == [u'bob', u'sam']
