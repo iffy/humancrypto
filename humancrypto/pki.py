@@ -6,6 +6,7 @@ from cryptography import x509
 from cryptography.x509.oid import NameOID
 
 import os
+import stat
 from datetime import datetime, timedelta
 from uuid import uuid4
 
@@ -61,7 +62,7 @@ class PrivateKey(object):
     def save(self, filename):
         with open(filename, 'wb') as fh:
             fh.write(self.dump())
-        os.chmod(filename, 0600)
+        os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR)
 
     def dump(self):
         return self._key.private_bytes(
