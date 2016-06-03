@@ -14,7 +14,7 @@ Create a private key:
 >>> from humancrypto import PrivateKey
 >>> key = PrivateKey.create()
 >>> with open('private.key', 'wb') as fh:
-...     fh.write(key.serialize())
+...     fh.write(key.dump())
 ```
 
 Load a private key from a file (these are both equivalent).  There are equivalent methods for CSRs, Certs, Public Keys:
@@ -40,7 +40,7 @@ Create a Certificate Signing Request (CSR):
 >>> csr.attribs['common_name']
 u'bob'
 >>> with open('ca.csr', 'wb') as fh:
-...     fh.write(csr.serialize())
+...     fh.write(csr.dump())
 ```
 
 Sign a CSR:
@@ -50,7 +50,7 @@ Sign a CSR:
 >>> cert.attribs['common_name']
 u'bob'
 >>> with open('ca.cert', 'wb') as fh:
-...     fh.write(cert.serialize())
+...     fh.write(cert.dump())
 ```
 
 XXX Verify that a certificate was signed by a private key:

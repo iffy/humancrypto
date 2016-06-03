@@ -57,7 +57,7 @@ class PrivateKey(object):
             data, None, default_backend())
         return PrivateKey(private_key)
 
-    def serialize(self):
+    def dump(self):
         return self._key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
@@ -131,7 +131,7 @@ class PublicKey(object):
             data, default_backend())
         return PublicKey(public_key)
 
-    def serialize(self):
+    def dump(self):
         return self._key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
@@ -209,12 +209,15 @@ class CSR(object):
         #     f.write(csr.public_bytes(serialization.Encoding.PEM))
 
     @classmethod
-    def load(cls, data):
+    def load(cls, data=None, filename=None):
+        if filename is not None:
+            with open(filename, 'rb') as fh:
+                data = fh.read()
         csr = x509.load_pem_x509_csr(
             data, default_backend())
         return CSR(csr)
 
-    def serialize(self):
+    def dump(self):
         return self._csr.public_bytes(serialization.Encoding.PEM)
 
 
@@ -226,12 +229,15 @@ class Certificate(object):
         self.issuer = _CertificateNameHolder(_cert.issuer)
 
     @classmethod
-    def load(cls, data):
+    def load(cls, data=None, filename=None):
+        if filename is not None:
+            with open(filename, 'rb') as fh:
+                data = fh.read()
         return Certificate(
             x509.load_pem_x509_certificate(data, default_backend())
         )
 
-    def serialize(self):
+    def dump(self):
         return self._cert.public_bytes(serialization.Encoding.PEM)
 
 
