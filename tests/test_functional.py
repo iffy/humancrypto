@@ -1,7 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509.oid import NameOID
+
+import mock
+import pytest
 import six
-from humancrypto import PrivateKey, PublicKey, CSR
+from humancrypto import PrivateKey, PublicKey, CSR, Certificate, Error
 
 
 class TestPrivateKey(object):
@@ -51,6 +57,39 @@ class TestPrivateKey(object):
         assert isinstance(signature, six.binary_type)
         assert priv.public_key.verify(six.b('a message'), signature) is True
 
+    def test_self_signed_cert(self):
+        priv = PrivateKey.create()
+        cert = priv.self_signed_cert({'common_name': u'jose'})
+        assert isinstance(cert, Certificate)
+        assert cert.subject.attribs['common_name'] == u'jose'
+        assert cert.issuer.attribs['common_name'] == u'jose'
+
+        cert = x509.load_pem_x509_certificate(
+            cert.serialize(), default_backend()
+        )
+        assert cert.subject.get_attributes_for_oid(
+            NameOID.COMMON_NAME)[0].value == u'jose'
+        assert cert.issuer.get_attributes_for_oid(
+            NameOID.COMMON_NAME)[0].value == u'jose'
+
+    def test_sign_csr(self):
+        priv = PrivateKey.create()
+        cert1 = priv.self_signed_cert({'common_name': u'alice'})
+        csr = CSR.create(priv, {'common_name': u'bob'})
+        cert2 = priv.sign_csr(csr, cert1)
+        assert cert1.subject.attribs == cert2.issuer.attribs
+        assert cert2.issuer.attribs['common_name'] == u'alice'
+        assert cert2.subject.attribs['common_name'] == u'bob'
+
+    def test_sign_csr_invalid_signature(self):
+        priv = PrivateKey.create()
+        cert1 = priv.self_signed_cert({'common_name': u'alice'})
+        csr = CSR.create(priv, {'common_name': u'bob'})
+        csr._csr = mock.MagicMock()
+        csr._csr.is_signature_valid = False
+        with pytest.raises(Error):
+            priv.sign_csr(csr, cert1)
+
 
 class TestPublicKey(object):
 
@@ -88,3 +127,13 @@ class TestCSR(object):
         priv = PrivateKey.create()
         csr = CSR.create(priv, {'common_name': [u'bob', u'sam']})
         assert csr.attribs['common_name'] == [u'bob', u'sam']
+
+
+class TestCertificate(object):
+
+    def test_load(self):
+        priv = PrivateKey.create()
+        cert = priv.self_signed_cert({'common_name': u'betty'})
+        cert2 = Certificate.load(cert.serialize())
+        assert isinstance(cert2, Certificate)
+        assert cert.serialize() == cert2.serialize()
