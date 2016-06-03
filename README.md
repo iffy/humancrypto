@@ -1,6 +1,8 @@
 # Cryptography for humans
 
-**DON'T USE THIS IN PRODUCTION SYSTEMS.  It's just an idea right now.**
+Based on [pyca's cryptography](https://pypi.python.org/pypi/cryptography).
+
+**DON'T USE THIS IN PRODUCTION!  It's just an idea right now.**
 
 [![Build Status](https://travis-ci.org/iffy/humancrypto.svg?branch=master)](https://travis-ci.org/iffy/humancrypto)
 
@@ -9,7 +11,27 @@
     pip install git+https://github.com/iffy/humancrypto.git
 
 
-## Usage
+## Command line usage
+
+Create a private key:
+
+```sh
+humancrypto create-private foo.key
+```
+
+Extract a public key:
+
+```sh
+humancrypto extract-public foo.key foo.pub
+```
+
+Create a self-signed certificate:
+
+```sh
+humancrypto self-signed-cert foo.key foo.crt -d common_name=jim
+```
+
+## Library usage
 
 Create a private key:
 

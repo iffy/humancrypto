@@ -2,5 +2,7 @@
 setup.py
 humancrypto/VERSION
 humancrypto/__init__.py
+humancrypto/cli.py
 humancrypto/error.py
 humancrypto/pki.py
+scripts/humancrypto
