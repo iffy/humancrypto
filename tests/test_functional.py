@@ -113,6 +113,14 @@ class TestCSR(object):
     def test_create(self):
         priv = PrivateKey.create()
         csr = CSR.create(priv, {'common_name': u'bob', 'state': u'CA'})
+        assert isinstance(csr, CSR)
+        assert csr.attribs['common_name'] == u'bob'
+        assert csr.attribs['state'] == u'CA'
+
+    def test_create_from_private_key(self):
+        priv = PrivateKey.create()
+        csr = priv.signing_request({'common_name': u'bob', 'state': u'CA'})
+        assert isinstance(csr, CSR)
         assert csr.attribs['common_name'] == u'bob'
         assert csr.attribs['state'] == u'CA'
 

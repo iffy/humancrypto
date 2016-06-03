@@ -31,7 +31,7 @@ Create a self-signed Certificate:
 
 ```python
 >>> root_cert = key.self_signed_cert({'common_name': u'bob'})
->>> root_cert.attribs['common_name']
+>>> root_cert.subject.attribs['common_name']
 u'bob'
 ```
 
@@ -39,7 +39,8 @@ Create a Certificate Signing Request (CSR):
 
 ```python
 >>> from humancrypto import CSR
->>> csr = CSR(key.public_key, common_name=u'bob', ca=True)
+>>> csr = CSR(key, {'common_name': u'bob'})
+>>> csr = key.signing_request({'common_name': u'bob'}) # equivalent
 >>> csr.attribs['common_name']
 u'bob'
 >>> with open('ca.csr', 'wb') as fh:
@@ -50,7 +51,7 @@ Sign a CSR:
 
 ```python
 >>> cert = key.sign_csr(csr, root_cert)
->>> cert.attribs['common_name']
+>>> cert.subject.attribs['common_name']
 u'bob'
 >>> with open('ca.cert', 'wb') as fh:
 ...     fh.write(cert.dump())

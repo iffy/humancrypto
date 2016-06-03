@@ -116,6 +116,9 @@ class PrivateKey(object):
             raise Error('CSR signature is invalid')
         return self._make_cert(csr.attribs, cert.subject.attribs)
 
+    def signing_request(self, *args, **kwargs):
+        return CSR.create(self, *args, **kwargs)
+
 
 class PublicKey(object):
 
