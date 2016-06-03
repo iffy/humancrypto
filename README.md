@@ -57,11 +57,14 @@ u'bob'
 ...     fh.write(cert.dump())
 ```
 
+<!--
 XXX Verify that a certificate was signed by a private key:
 
 ```python
 >>> key.verify(cert)
 ```
+
+-->
 
 Encrypt some data:
 
@@ -76,6 +79,7 @@ Decrypt it:
 'something'
 ```
 
+<!--
 XXX Verify a certificate with a CA certificate:
 
 ```python
@@ -84,6 +88,8 @@ True
 >>> presented_cert.attribs['common_name']
 'foo'
 ```
+-->
+
 
 ## Notes
 
