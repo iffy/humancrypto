@@ -6,7 +6,7 @@
 
 ## Installation
 
-    pip install git+https://github.com/iffy/ppo.git
+    pip install git+https://github.com/iffy/humancrypto.git
 
 
 ## Usage
