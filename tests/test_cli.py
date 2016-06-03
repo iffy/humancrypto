@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+import six
+
 from humancrypto.cli import main
 from humancrypto import PrivateKey, PublicKey, Certificate
 
@@ -25,7 +27,7 @@ class TestCLI(object):
         main(['create-private', keyfile.strpath])
         main([
             'self-signed-cert', keyfile.strpath, certfile.strpath,
-            '-d', 'common_name=jim', '-d', u'state=CA',
+            '-d', 'common_name=jim', '-d', six.u('state=CA'),
         ])
         cert = Certificate.load(filename=certfile.strpath)
         assert cert.issuer.attribs['common_name'] == u'jim'
