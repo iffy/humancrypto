@@ -13,9 +13,13 @@ class PrivateKey(object):
     def key_size(self):
         return self._key.key_size
 
+    _public_key = None
+
     @property
     def public_key(self):
-        return PublicKey(self._key.public_key())
+        if self._public_key is None:
+            self._public_key = PublicKey(self._key.public_key())
+        return self._public_key
 
     @classmethod
     def create(cls):
@@ -27,7 +31,10 @@ class PrivateKey(object):
         return PrivateKey(private_key)
 
     @classmethod
-    def load(cls, data):
+    def load(cls, data=None, filename=None):
+        if filename is not None:
+            with open(filename, 'rb') as fh:
+                data = fh.read()
         private_key = serialization.load_pem_private_key(
             data, None, default_backend())
         return PrivateKey(private_key)
@@ -65,6 +72,21 @@ class PublicKey(object):
 
     def __init__(self, _key):
         self._key = _key
+
+    @classmethod
+    def load(cls, data=None, filename=None):
+        if filename is not None:
+            with open(filename, 'rb') as fh:
+                data = fh.read()
+        public_key = serialization.load_pem_public_key(
+            data, default_backend())
+        return PublicKey(public_key)
+
+    def serialize(self):
+        return self._key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
 
     def encrypt(self, bytes):
         return self._key.encrypt(

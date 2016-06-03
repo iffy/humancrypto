@@ -1,8 +1,8 @@
 # Cryptography for humans
 
-**DON'T USE THIS IN PRODUCTION SYSTEMS**
+**DON'T USE THIS IN PRODUCTION SYSTEMS.  It's just an idea right now.**
 
-Right now, this is just an idea.  It uses 2048-bit RSA keys.
+By default, 2048-bit RSA keys are used.
 
 ## Usage
 
@@ -10,16 +10,15 @@ Create a private key:
 
 ```
 >>> from humancrypto import PrivateKey
->>> key = PrivateKey()
+>>> key = PrivateKey.create()
 >>> with open('private.key', 'wb') as fh:
 ...     fh.write(key.serialize())
 ```
 
-Load a private key from a file (these are all equivalent).  There are equivalent methods for CSRs, Certs, Public Keys:
+Load a private key from a file (these are both equivalent).  There are equivalent methods for CSRs, Certs, Public Keys:
 
 ```
 >>> key = PrivateKey.load(filename='private.key')
->>> key = PrivateKey.load(open('private.key', 'rb'))
 >>> key = PrivateKey.load(open('private.key', 'rb').read())
 ```
 
