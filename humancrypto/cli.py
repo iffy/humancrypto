@@ -1,6 +1,7 @@
 from __future__ import print_function
 import argparse
 
+import six
 from humancrypto import PrivateKey
 
 
@@ -70,16 +71,20 @@ p.add_argument(
     help='Certificate filename')
 p.add_argument(
     '-d', '--data',
-    nargs='*',
+    action='append',
     help='Subject/Issuer attributes. (e.g. common_name=jim)')
 
 
 @do(p)
 def self_signed_cert(args):
     attribs = {}
-    for arg in args.data:
+    for arg in (args.data or []):
+        print('arg', arg)
         key, value = arg.split('=', 1)
+        if not isinstance(value, six.text_type):
+            value = value.decode('utf-8')
         attribs[key] = value
+        print('key', key, 'value', value)
     priv = PrivateKey.load(filename=args.privatekey)
     cert = priv.self_signed_cert(attribs)
     cert.save(args.certfile)

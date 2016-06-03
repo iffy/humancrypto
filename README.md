@@ -15,21 +15,15 @@ Based on [pyca's cryptography](https://pypi.python.org/pypi/cryptography).
 
 Create a private key:
 
-```sh
-humancrypto create-private foo.key
-```
+    humancrypto create-private foo.key
 
 Extract a public key:
 
-```sh
-humancrypto extract-public foo.key foo.pub
-```
+    humancrypto extract-public foo.key foo.pub
 
 Create a self-signed certificate:
 
-```sh
-humancrypto self-signed-cert foo.key foo.crt -d common_name=jim
-```
+    humancrypto self-signed-cert foo.key foo.crt -d common_name=jim
 
 ## Library usage
 
