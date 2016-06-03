@@ -2,6 +2,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography import x509
+from cryptography.x509.oid import NameOID
 
 
 class PrivateKey(object):
@@ -110,3 +112,63 @@ class PublicKey(object):
         verifier.update(message)
         verifier.verify()
         return True
+
+
+class CSR(object):
+
+    _OID_MAPPING = {
+        'common_name': NameOID.COMMON_NAME,
+        'country': NameOID.COUNTRY_NAME,
+        'state': NameOID.STATE_OR_PROVINCE_NAME,
+        'city': NameOID.LOCALITY_NAME,
+        'org_name': NameOID.ORGANIZATION_NAME,
+        'org_unit': NameOID.ORGANIZATIONAL_UNIT_NAME,
+        'name': NameOID.GIVEN_NAME,
+        'email': NameOID.EMAIL_ADDRESS,
+    }
+
+    def __init__(self, _csr):
+        self._csr = _csr
+
+    _attribs = None
+
+    @property
+    def attribs(self):
+        if self._attribs is None:
+            self._attribs = a = {}
+            for name, oid in self._OID_MAPPING.items():
+                values = self._csr.subject.get_attributes_for_oid(oid)
+                if len(values) == 1:
+                    a[name] = values[0].value
+                else:
+                    a[name] = [x.value for x in values]
+        return self._attribs
+
+    @classmethod
+    def create(cls, private_key, attribs=None):
+        attribs = attribs or {}
+        attrib_list = []
+        for nice_name,values in attribs.items():
+            oid = cls._OID_MAPPING[nice_name]
+            if not isinstance(values, list):
+                values = [values]
+            for single_value in values:
+                attrib_list.append(x509.NameAttribute(oid, single_value))
+
+        csr = x509.CertificateSigningRequestBuilder().subject_name(
+            x509.Name(attrib_list)
+        ).sign(private_key._key, hashes.SHA256(), default_backend())
+        return CSR(csr)
+        # # Write our CSR out to disk.
+        # with open("path/to/csr.pem", "wb") as f:
+        #     f.write(csr.public_bytes(serialization.Encoding.PEM))
+
+    @classmethod
+    def load(cls, data):
+        csr = x509.load_pem_x509_csr(
+            data, default_backend())
+        return CSR(csr)
+
+    def serialize(self):
+        return self._csr.public_bytes(serialization.Encoding.PEM)
+

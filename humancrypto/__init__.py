@@ -1,3 +1,3 @@
-from humancrypto.pki import PrivateKey, PublicKey
+from humancrypto.pki import PrivateKey, PublicKey, CSR
 
-__all__ = ['PrivateKey', 'PublicKey']
+__all__ = ['PrivateKey', 'PublicKey', 'CSR']
