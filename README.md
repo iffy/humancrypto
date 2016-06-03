@@ -4,7 +4,10 @@
 
 [![Build Status](https://travis-ci.org/iffy/humancrypto.svg?branch=master)](https://travis-ci.org/iffy/humancrypto)
 
-By default, 2048-bit RSA keys are used.
+## Installation
+
+    pip install git+https://github.com/iffy/ppo.git
+
 
 ## Usage
 
@@ -80,3 +83,7 @@ True
 >>> presented_cert.attribs['common_name']
 'foo'
 ```
+
+## Notes
+
+By default, 2048-bit RSA keys are used.
