@@ -33,7 +33,7 @@ u'bob'
 ...     fh.write(csr.serialize())
 ```
 
-Sign a CSR:
+XXX Sign a CSR:
 
 ```
 >>> cert = key.sign_csr(csr)
@@ -43,7 +43,7 @@ u'bob'
 ...     fh.write(cert.serialize())
 ```
 
-Verify that a certificate was signed by a private key:
+XXX Verify that a certificate was signed by a private key:
 
 ```
 >>> key.verify(cert)
@@ -62,7 +62,7 @@ Decrypt it:
 'something'
 ```
 
-Verify a certificate with a CA certificate:
+XXX Verify a certificate with a CA certificate:
 
 ```
 >>> ca_cert.did_sign(presented_cert)
