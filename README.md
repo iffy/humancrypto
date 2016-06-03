@@ -2,6 +2,8 @@
 
 **DON'T USE THIS IN PRODUCTION SYSTEMS.  It's just an idea right now.**
 
+![](https://travis-ci.org/iffy/humancrypto.svg?branch=master)
+
 By default, 2048-bit RSA keys are used.
 
 ## Usage
