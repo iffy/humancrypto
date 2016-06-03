@@ -4,6 +4,8 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import NameOID
 
+import os
+import stat
 import mock
 import pytest
 import six
@@ -17,7 +19,7 @@ class TestPrivateKey(object):
         assert isinstance(key, PrivateKey)
         assert key.key_size == 2048
 
-    def test_serialize(self):
+    def test_dump(self):
         key = PrivateKey.create()
         serialized = key.dump()
         assert isinstance(serialized, six.binary_type)
@@ -33,6 +35,16 @@ class TestPrivateKey(object):
         fh.write(key.dump())
         key2 = PrivateKey.load(filename=fh.strpath)
         assert key.dump() == key2.dump()
+
+    def test_save(self, tmpdir):
+        first = PrivateKey.create()
+        fh = tmpdir.join('somefile')
+        first.save(fh.strpath)
+        second = PrivateKey.load(filename=fh.strpath)
+        assert first.dump() == second.dump()
+        bits = os.stat(fh.strpath).st_mode
+        perms = bits & (stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+        assert perms == (stat.S_IRUSR | stat.S_IWUSR)
 
     def test_public_key(self):
         priv = PrivateKey.create()
@@ -107,6 +119,15 @@ class TestPublicKey(object):
         pub2 = PublicKey.load(filename=fh.strpath)
         assert pub2.dump() == pub.dump()
 
+    def test_save(self, tmpdir):
+        priv = PrivateKey.create()
+        first = priv.public_key
+        fh = tmpdir.join('somefile')
+        first.save(fh.strpath)
+        second = PublicKey.load(filename=fh.strpath)
+        assert first.dump() == second.dump()
+        # no assertions about permissions
+
 
 class TestCSR(object):
 
@@ -144,6 +165,15 @@ class TestCSR(object):
         csr = CSR.create(priv, {'common_name': [u'bob', u'sam']})
         assert csr.attribs['common_name'] == [u'bob', u'sam']
 
+    def test_save(self, tmpdir):
+        priv = PrivateKey.create()
+        first = priv.signing_request({'common_name': u'juniper'})
+        fh = tmpdir.join('somefile')
+        first.save(fh.strpath)
+        second = CSR.load(filename=fh.strpath)
+        assert first.dump() == second.dump()
+        # no permission assertions
+
 
 class TestCertificate(object):
 
@@ -161,3 +191,12 @@ class TestCertificate(object):
         fh.write(cert.dump())
         cert2 = Certificate.load(filename=fh.strpath)
         assert cert2.dump() == cert.dump()
+
+    def test_save(self, tmpdir):
+        priv = PrivateKey.create()
+        first = priv.self_signed_cert({'common_name': u'juniper'})
+        fh = tmpdir.join('somefile')
+        first.save(fh.strpath)
+        second = Certificate.load(filename=fh.strpath)
+        assert first.dump() == second.dump()
+        # no permission assertions

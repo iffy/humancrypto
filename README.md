@@ -16,15 +16,15 @@ Create a private key:
 ```python
 >>> from humancrypto import PrivateKey
 >>> key = PrivateKey.create()
->>> with open('private.key', 'wb') as fh:
-...     fh.write(key.dump())
+>>> key.save('private.key')
 ```
 
-Load a private key from a file (these are both equivalent).  There are equivalent methods for CSRs, Certs, Public Keys:
+Load a private key from a file (these are all equivalent).  There are equivalent methods for CSRs, Certs, Public Keys:
 
 ```python
 >>> key = PrivateKey.load(filename='private.key')
 >>> key = PrivateKey.load(open('private.key', 'rb').read())
+>>> key = PrivateKey.load(key.dumps())
 ```
 
 Create a self-signed Certificate:
@@ -43,8 +43,7 @@ Create a Certificate Signing Request (CSR):
 >>> csr = key.signing_request({'common_name': u'bob'}) # equivalent
 >>> csr.attribs['common_name']
 u'bob'
->>> with open('ca.csr', 'wb') as fh:
-...     fh.write(csr.dump())
+>>> csr.save('ca.csr')
 ```
 
 Sign a CSR:
@@ -53,8 +52,7 @@ Sign a CSR:
 >>> cert = key.sign_csr(csr, root_cert)
 >>> cert.subject.attribs['common_name']
 u'bob'
->>> with open('ca.cert', 'wb') as fh:
-...     fh.write(cert.dump())
+>>> cert.save('ca.cert')
 ```
 
 <!--
