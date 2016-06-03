@@ -25,8 +25,10 @@ class TestCLI(object):
         main(['create-private', keyfile.strpath])
         main([
             'self-signed-cert', keyfile.strpath, certfile.strpath,
-            '-d', u'common_name=jim',
+            '-d', 'common_name=jim', '-d', u'state=CA',
         ])
         cert = Certificate.load(filename=certfile.strpath)
         assert cert.issuer.attribs['common_name'] == u'jim'
         assert cert.subject.attribs['common_name'] == u'jim'
+        assert cert.issuer.attribs['state'] == u'CA'
+        assert cert.subject.attribs['state'] == u'CA'
