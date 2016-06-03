@@ -5,6 +5,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 
+import os
 from datetime import datetime, timedelta
 from uuid import uuid4
 
@@ -56,6 +57,11 @@ class PrivateKey(object):
         private_key = serialization.load_pem_private_key(
             data, None, default_backend())
         return PrivateKey(private_key)
+
+    def save(self, filename):
+        with open(filename, 'wb') as fh:
+            fh.write(self.dump())
+        os.chmod(filename, 0600)
 
     def dump(self):
         return self._key.private_bytes(
@@ -134,6 +140,10 @@ class PublicKey(object):
             data, default_backend())
         return PublicKey(public_key)
 
+    def save(self, filename):
+        with open(filename, 'wb') as fh:
+            fh.write(self.dump())
+
     def dump(self):
         return self._key.public_bytes(
             encoding=serialization.Encoding.PEM,
@@ -207,9 +217,6 @@ class CSR(object):
             x509.Name(attrib_list)
         ).sign(private_key._key, hashes.SHA256(), default_backend())
         return CSR(csr)
-        # # Write our CSR out to disk.
-        # with open("path/to/csr.pem", "wb") as f:
-        #     f.write(csr.public_bytes(serialization.Encoding.PEM))
 
     @classmethod
     def load(cls, data=None, filename=None):
@@ -219,6 +226,10 @@ class CSR(object):
         csr = x509.load_pem_x509_csr(
             data, default_backend())
         return CSR(csr)
+
+    def save(self, filename):
+        with open(filename, 'wb') as fh:
+            fh.write(self.dump())
 
     def dump(self):
         return self._csr.public_bytes(serialization.Encoding.PEM)
@@ -239,6 +250,10 @@ class Certificate(object):
         return Certificate(
             x509.load_pem_x509_certificate(data, default_backend())
         )
+
+    def save(self, filename):
+        with open(filename, 'wb') as fh:
+            fh.write(self.dump())
 
     def dump(self):
         return self._cert.public_bytes(serialization.Encoding.PEM)
