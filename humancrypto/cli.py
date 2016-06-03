@@ -1,6 +1,5 @@
 from __future__ import print_function
 import argparse
-import sys
 
 from humancrypto import PrivateKey
 
@@ -17,12 +16,6 @@ def out(*x):
 
 
 ap = argparse.ArgumentParser()
-
-
-@do(ap)
-def not_implemented(args):
-    print('Command not implemented')
-    sys.exit(1)
 
 
 sp = ap.add_subparsers(title='subcommands', dest='command')
@@ -62,6 +55,35 @@ def extract_public(args):
     pub = PrivateKey.load(filename=args.privatekey).public_key
     pub.save(args.publickey)
     out('wrote', args.publickey)
+
+# --------------------------------------------------------
+# self-signed-cert
+# --------------------------------------------------------
+p = sp.add_parser(
+    'self-signed-cert',
+    help='Extract a public key from a private key')
+p.add_argument(
+    'privatekey',
+    help='Private key filename')
+p.add_argument(
+    'certfile',
+    help='Certificate filename')
+p.add_argument(
+    '-d', '--data',
+    nargs='*',
+    help='Subject/Issuer attributes. (e.g. common_name=jim)')
+
+
+@do(p)
+def self_signed_cert(args):
+    attribs = {}
+    for arg in args.data:
+        key, value = arg.split('=', 1)
+        attribs[key] = value
+    priv = PrivateKey.load(filename=args.privatekey)
+    cert = priv.self_signed_cert(attribs)
+    cert.save(args.certfile)
+    out('wrote', args.certfile)
 
 
 def main(args=None):
