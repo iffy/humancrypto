@@ -1,0 +1,19 @@
+[run]
+branch = True
+source =
+    humancrypto
+    tests/
+
+[paths]
+source =
+   humancrypto
+   .tox/*/lib/python*/site-packages/humancrypto
+   .tox/pypy/site-packages/humancrypto
+
+[report]
+exclude_lines =
+    @abc.abstractmethod
+    @abc.abstractproperty
+
+omit =
+    tests/*
