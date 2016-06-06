@@ -6,6 +6,9 @@ Based on [pyca's cryptography](https://pypi.python.org/pypi/cryptography).
 
 [![Build Status](https://travis-ci.org/iffy/humancrypto.svg?branch=master)](https://travis-ci.org/iffy/humancrypto)
 
+I made this in an attempt to have an even easier interface than [easy-rsa](https://github.com/OpenVPN/easy-rsa). We'll see how that turns out.
+
+
 ## Installation
 
     pip install git+https://github.com/iffy/humancrypto.git
