@@ -62,7 +62,7 @@ def extract_public(args):
 # --------------------------------------------------------
 p = sp.add_parser(
     'self-signed-cert',
-    help='Extract a public key from a private key')
+    help='Create a self-signed certificate')
 p.add_argument(
     'privatekey',
     help='Private key filename')

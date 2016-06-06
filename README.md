@@ -6,6 +6,9 @@ Based on [pyca's cryptography](https://pypi.python.org/pypi/cryptography).
 
 [![Build Status](https://travis-ci.org/iffy/humancrypto.svg?branch=master)](https://travis-ci.org/iffy/humancrypto)
 
+I made this in an attempt to have an even easier interface than [easy-rsa](https://github.com/OpenVPN/easy-rsa). We'll see how that turns out.
+
+
 ## Installation
 
     pip install git+https://github.com/iffy/humancrypto.git
@@ -24,6 +27,7 @@ Extract a public key:
 Create a self-signed certificate:
 
     humancrypto self-signed-cert foo.key foo.crt -d common_name=jim
+
 
 ## Library usage
 
@@ -79,19 +83,6 @@ XXX Verify that a certificate was signed by a private key:
 ```
 
 -->
-
-Encrypt some data:
-
-```python
->>> ciphertext = key.public_key.encrypt('something')
-```
-
-Decrypt it:
-
-```python
->>> key.decrypt(ciphertext)
-'something'
-```
 
 <!--
 XXX Verify a certificate with a CA certificate:
