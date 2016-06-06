@@ -46,3 +46,30 @@ class TestCLI(object):
         csr = CSR.load(filename=csrfile.strpath)
         assert csr.attribs['common_name'] == u'jim'
         assert csr.attribs['state'] == u'CA'
+
+    def test_sign_csr(self, tmpdir):
+        cakey = tmpdir.join('ca.key')
+        cacrt = tmpdir.join('ca.crt')
+        otherkey = tmpdir.join('other.key')
+        othercsr = tmpdir.join('other.csr')
+        othercrt = tmpdir.join('other.crt')
+        main(['create-private', cakey.strpath])
+        main([
+            'self-signed-cert', cakey.strpath, cacrt.strpath,
+            '-d', 'common_name=bob', '-d', six.u('state=WA'),
+        ])
+
+        main(['create-private', otherkey.strpath])
+        main([
+            'create-csr', otherkey.strpath, othercsr.strpath,
+            '-d', 'common_name=jim', '-d', six.u('state=CA'),
+        ])
+        main([
+            'sign-csr', cakey.strpath, cacrt.strpath, othercsr.strpath,
+            othercrt.strpath,
+        ])
+        cert = Certificate.load(filename=othercrt.strpath)
+        assert cert.issuer.attribs['common_name'] == u'bob'
+        assert cert.subject.attribs['common_name'] == u'jim'
+        assert cert.issuer.attribs['state'] == u'WA'
+        assert cert.subject.attribs['state'] == u'CA'
