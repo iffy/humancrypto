@@ -1,10 +1,10 @@
 # Cryptography for humans
 
-Essentially [pyca's cryptography](https://pypi.python.org/pypi/cryptography) + sane defaults.
+[![Build Status](https://travis-ci.org/iffy/humancrypto.svg?branch=master)](https://travis-ci.org/iffy/humancrypto)
 
 **DON'T USE THIS IN PRODUCTION!  It's just an idea right now.**
 
-[![Build Status](https://travis-ci.org/iffy/humancrypto.svg?branch=master)](https://travis-ci.org/iffy/humancrypto)
+This is essentially [pyca's cryptography](https://pypi.python.org/pypi/cryptography) + sane defaults (for RSA).
 
 I made this in an attempt to have an even easier and more portable interface than [easy-rsa](https://github.com/OpenVPN/easy-rsa). We'll see how that turns out.
 
