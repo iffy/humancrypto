@@ -25,6 +25,7 @@ Create a self-signed certificate:
 
     humancrypto self-signed-cert foo.key foo.crt -d common_name=jim
 
+
 ## Library usage
 
 Create a private key:
@@ -79,19 +80,6 @@ XXX Verify that a certificate was signed by a private key:
 ```
 
 -->
-
-Encrypt some data:
-
-```python
->>> ciphertext = key.public_key.encrypt('something')
-```
-
-Decrypt it:
-
-```python
->>> key.decrypt(ciphertext)
-'something'
-```
 
 <!--
 XXX Verify a certificate with a CA certificate:

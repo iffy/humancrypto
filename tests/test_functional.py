@@ -57,12 +57,6 @@ class TestPrivateKey(object):
         pub2 = priv.public_key
         assert pub1 is pub2
 
-    def test_encryption(self):
-        priv = PrivateKey.create()
-        cipher = priv.public_key.encrypt(six.b('some bytes'))
-        plain = priv.decrypt(cipher)
-        assert plain == six.b('some bytes')
-
     def test_signing(self):
         priv = PrivateKey.create()
         signature = priv.sign(six.b('a message'))

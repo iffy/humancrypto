@@ -71,16 +71,6 @@ class PrivateKey(object):
             encryption_algorithm=serialization.NoEncryption(),
         )
 
-    def decrypt(self, ciphertext):
-        return self._key.decrypt(
-            ciphertext,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA1()),
-                algorithm=hashes.SHA1(),
-                label=None,
-            )
-        )
-
     def sign(self, message):
         signer = self._key.signer(
             padding.PSS(
@@ -92,7 +82,7 @@ class PrivateKey(object):
         signer.update(message)
         return signer.finalize()
 
-    def _make_cert(self, subject_attrs, issuer_attrs):
+    def _make_cert(self, subject_attrs, issuer_attrs, is_ca=False):
         builder = x509.CertificateBuilder()
         subject_list = _attribDict2x509List(subject_attrs)
         issuer_list = _attribDict2x509List(issuer_attrs)
@@ -105,8 +95,11 @@ class PrivateKey(object):
             datetime.today() + timedelta(days=2 * 365))
         builder = builder.serial_number(int(uuid4()))
         builder = builder.public_key(self._key.public_key())
+        path_length = None
+        if is_ca:
+            path_length = 0
         builder = builder.add_extension(
-            x509.BasicConstraints(ca=False, path_length=None),
+            x509.BasicConstraints(ca=is_ca, path_length=path_length),
             critical=True,
         )
         certificate = builder.sign(
@@ -116,7 +109,7 @@ class PrivateKey(object):
         return Certificate(certificate)
 
     def self_signed_cert(self, attribs=None):
-        return self._make_cert(attribs, attribs)
+        return self._make_cert(attribs, attribs, is_ca=True)
 
     def sign_csr(self, csr, cert):
         if not csr._csr.is_signature_valid:
@@ -149,16 +142,6 @@ class PublicKey(object):
         return self._key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
-
-    def encrypt(self, bytes):
-        return self._key.encrypt(
-            bytes,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA1()),
-                algorithm=hashes.SHA1(),
-                label=None,
-            )
         )
 
     def verify(self, message, signature):
