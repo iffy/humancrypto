@@ -18,15 +18,21 @@ I made this in an attempt to have an even easier and more portable interface tha
 
 Create a private key:
 
-    humancrypto create-private foo.key
+    humancrypto create-private ca.key
 
 Extract a public key:
 
-    humancrypto extract-public foo.key foo.pub
+    humancrypto extract-public ca.key ca.pub
 
-Create a self-signed certificate:
+Create a self-signed CA certificate:
 
-    humancrypto self-signed-cert foo.key foo.crt -d common_name=jim
+    humancrypto self-signed-cert ca.key ca.crt -d common_name=jim
+
+Create a signed certificate for another key:
+
+    humancrypto create-private server.key
+    humancrypto create-csr server.key server.csr -d common_name=bob
+    humancrypto sign-csr ca.key ca.crt server.csr server.crt
 
 
 ## Library usage

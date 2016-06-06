@@ -2,7 +2,7 @@ from __future__ import print_function
 import argparse
 
 import six
-from humancrypto import PrivateKey
+from humancrypto import PrivateKey, Certificate, CSR
 
 
 def do(parser):
@@ -79,16 +79,75 @@ p.add_argument(
 def self_signed_cert(args):
     attribs = {}
     for arg in (args.data or []):
-        print('arg', arg)
         key, value = arg.split('=', 1)
         if not isinstance(value, six.text_type):
             value = value.decode('utf-8')
         attribs[key] = value
-        print('key', key, 'value', value)
     priv = PrivateKey.load(filename=args.privatekey)
     cert = priv.self_signed_cert(attribs)
     cert.save(args.certfile)
     out('wrote', args.certfile)
+
+# --------------------------------------------------------
+# create-csr
+# --------------------------------------------------------
+p = sp.add_parser(
+    'create-csr',
+    help='Create a Certificate Signing Request (CSR)')
+p.add_argument(
+    'privatekey',
+    help='Private key filename')
+p.add_argument(
+    'csr',
+    help='CSR filename')
+p.add_argument(
+    '-d', '--data',
+    action='append',
+    help='Subject attributes. (e.g. common_name=jim)')
+
+
+@do(p)
+def create_csr(args):
+    attribs = {}
+    for arg in (args.data or []):
+        key, value = arg.split('=', 1)
+        if not isinstance(value, six.text_type):
+            value = value.decode('utf-8')
+        attribs[key] = value
+    priv = PrivateKey.load(filename=args.privatekey)
+    csr = priv.signing_request(attribs)
+    csr.save(args.csr)
+    out('wrote', args.csr)
+
+
+# --------------------------------------------------------
+# sign-csr
+# --------------------------------------------------------
+p = sp.add_parser(
+    'sign-csr',
+    help='Sign a Certificate Signing Request to make a certificate')
+p.add_argument(
+    'signingkey',
+    help='Filename of private key to sign with.')
+p.add_argument(
+    'signingcert',
+    help='Filename of certificate to sign with.')
+p.add_argument(
+    'csr',
+    help='CSR to sign')
+p.add_argument(
+    'cert',
+    help='Filename to write resulting cert to.')
+
+
+@do(p)
+def sign_csr(args):
+    signing_key = PrivateKey.load(filename=args.signingkey)
+    signing_cert = Certificate.load(filename=args.signingcert)
+    csr = CSR.load(filename=args.csr)
+    cert = signing_key.sign_csr(csr, signing_cert)
+    cert.save(args.cert)
+    out('wrote', args.cert)
 
 
 def main(args=None):
