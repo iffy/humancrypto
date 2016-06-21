@@ -3,7 +3,9 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography import x509
-from cryptography.x509.oid import NameOID
+from cryptography.x509.oid import NameOID, ExtensionOID
+from cryptography.x509.general_name import DirectoryName
+from cryptography.x509 import KeyUsage
 
 import os
 import stat
@@ -22,6 +24,36 @@ OID_MAPPING = {
     'name': NameOID.GIVEN_NAME,
     'email': NameOID.EMAIL_ADDRESS,
 }
+
+EXT_OID_MAPPING = {
+    'basic_constraints': ExtensionOID.BASIC_CONSTRAINTS,
+    'key_usage': ExtensionOID.KEY_USAGE,
+    'subject_alternative_name': ExtensionOID.SUBJECT_ALTERNATIVE_NAME,
+    'issuer_alternative_name': ExtensionOID.ISSUER_ALTERNATIVE_NAME,
+    'subject_key_identifier': ExtensionOID.SUBJECT_KEY_IDENTIFIER,
+    'name_constraints': ExtensionOID.NAME_CONSTRAINTS,
+    'crl_distribution_points': ExtensionOID.CRL_DISTRIBUTION_POINTS,
+    'certificate_policies': ExtensionOID.CERTIFICATE_POLICIES,
+    'authority_key_identifier': ExtensionOID.AUTHORITY_KEY_IDENTIFIER,
+    'extended_key_usage': ExtensionOID.EXTENDED_KEY_USAGE,
+    'authority_information_access': ExtensionOID.AUTHORITY_INFORMATION_ACCESS,
+    'inhibit_any_policy': ExtensionOID.INHIBIT_ANY_POLICY,
+    'ocsp_no_check': ExtensionOID.OCSP_NO_CHECK,
+    'crl_number': ExtensionOID.CRL_NUMBER,
+    'policy_constraints': ExtensionOID.POLICY_CONSTRAINTS,
+}
+
+KEY_USAGE_ATTRS = [
+    'digital_signature',
+    'content_commitment',
+    'key_encipherment',
+    'data_encipherment',
+    'key_agreement',
+    'key_cert_sign',
+    'crl_sign',
+    'encipher_only',
+    'decipher_only',
+]
 
 
 class PrivateKey(object):
@@ -86,15 +118,45 @@ class PrivateKey(object):
         builder = x509.CertificateBuilder()
         subject_list = _attribDict2x509List(subject_attrs)
         issuer_list = _attribDict2x509List(issuer_attrs)
+        pubkey = self._key.public_key()
+        serial = int(uuid4())
 
         builder = builder.subject_name(x509.Name(subject_list))
-        builder = builder.issuer_name(x509.Name(issuer_list))
+        issuer_name = x509.Name(issuer_list)
+        builder = builder.issuer_name(issuer_name)
         builder = builder.not_valid_before(
             datetime.today() - timedelta(days=1))
         builder = builder.not_valid_after(
             datetime.today() + timedelta(days=2 * 365))
-        builder = builder.serial_number(int(uuid4()))
-        builder = builder.public_key(self._key.public_key())
+        builder = builder.serial_number(serial)
+        builder = builder.public_key(pubkey)
+
+        # extensions
+        if is_ca:
+            # Subject Key Identifier
+            ski = x509.SubjectKeyIdentifier.from_public_key(pubkey)
+            builder = builder.add_extension(ski, True)
+            
+            # AuthorityKeyIdentifier
+            aki = x509.AuthorityKeyIdentifier(
+                key_identifier=ski.digest,
+                authority_cert_issuer=[DirectoryName(issuer_name)],
+                authority_cert_serial_number=serial)
+            builder = builder.add_extension(aki, True)
+
+            # Key Usage
+            builder = builder.add_extension(KeyUsage(
+                digital_signature=False,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                key_cert_sign=True,
+                crl_sign=True,
+                encipher_only=False,
+                decipher_only=False,
+            ), True)
+
         path_length = None
         if is_ca:
             path_length = 0
@@ -169,7 +231,6 @@ def _attribDict2x509List(attribs):
             attrib_list.append(x509.NameAttribute(oid, single_value))
     return attrib_list
 
-
 def _x509Name2attribDict(instance):
     a = {}
     for name, oid in OID_MAPPING.items():
@@ -179,6 +240,47 @@ def _x509Name2attribDict(instance):
         else:
             a[name] = [x.value for x in values]
     return a
+
+def _x509Ext2Dict(extensions):
+    ret = {}
+    for name, oid in EXT_OID_MAPPING.items():
+        try:
+            value = extensions.get_extension_for_oid(oid)
+        except x509.ExtensionNotFound:
+            continue
+        if value:
+            val = value.value
+            
+            if name == 'basic_constraints':
+                val = _basicConstraints2Dict(val)
+            elif name == 'subject_key_identifier':
+                val = val.digest
+            elif name == 'authority_key_identifier':
+                issuer = [_CertificateNameHolder(x.value).attribs for x in val.authority_cert_issuer]
+                val = {
+                    'keyid': val.key_identifier,
+                    'serial': val.authority_cert_serial_number,
+                    'issuer': issuer,
+                }
+                if len(val['issuer']) == 1:
+                    val['issuer'] = val['issuer'][0]
+            elif name == 'key_usage':
+                tmp = []
+                for k in KEY_USAGE_ATTRS:
+                    try:
+                        if getattr(val, k, None):
+                            tmp.append(k)
+                    except ValueError:
+                        pass
+                val = tmp
+            ret[name] = val
+    return ret
+
+def _basicConstraints2Dict(basic_constraints):
+    return {
+        'ca': basic_constraints.ca,
+        'path_length': basic_constraints.path_length,
+    }
 
 
 class CSR(object):
@@ -225,6 +327,7 @@ class Certificate(object):
         self._cert = _cert
         self.subject = _CertificateNameHolder(_cert.subject)
         self.issuer = _CertificateNameHolder(_cert.issuer)
+        self.serial_number = _cert.serial
 
     @classmethod
     def load(cls, data=None, filename=None):
@@ -241,6 +344,13 @@ class Certificate(object):
 
     def dump(self):
         return self._cert.public_bytes(serialization.Encoding.PEM)
+
+    _extensions = None
+    @property
+    def extensions(self):
+        if self._extensions is None:
+            self._extensions = _x509Ext2Dict(self._cert.extensions)
+        return self._extensions
 
 
 class _CertificateNameHolder(object):

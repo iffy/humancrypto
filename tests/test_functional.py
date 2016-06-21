@@ -194,3 +194,26 @@ class TestCertificate(object):
         second = Certificate.load(filename=fh.strpath)
         assert first.dump() == second.dump()
         # no permission assertions
+
+    def test_ca(self):
+        """
+        CA certificates should have the right x509 extensions
+        """
+        priv = PrivateKey.create()
+        cert = priv.self_signed_cert({'common_name': u'CA'})
+        
+        # Basic Constraints
+        assert cert.extensions['basic_constraints']['ca'] is True
+
+        # Subject Key Identifier
+        assert cert.extensions['subject_key_identifier'] is not None
+
+        # Authority Key Identifier
+        assert cert.extensions['authority_key_identifier'] is not None
+        aki = cert.extensions['authority_key_identifier']
+        assert aki['keyid'] == cert.extensions['subject_key_identifier']
+        assert aki['serial'] == cert.serial_number
+        assert aki['issuer'] == cert.issuer.attribs
+
+        # Key Usage
+        assert set(cert.extensions['key_usage']) == set(['key_cert_sign', 'crl_sign'])
