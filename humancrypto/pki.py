@@ -3,9 +3,9 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography import x509
-from cryptography.x509.oid import NameOID, ExtensionOID
+from cryptography.x509.oid import NameOID, ExtensionOID, ExtendedKeyUsageOID
 from cryptography.x509.general_name import DirectoryName
-from cryptography.x509 import KeyUsage
+from cryptography.x509 import KeyUsage, ExtendedKeyUsage
 
 import os
 import stat
@@ -55,6 +55,28 @@ KEY_USAGE_ATTRS = [
     'decipher_only',
 ]
 
+def base_key_usage():
+    return {
+        'digital_signature': False,
+        'content_commitment': False,
+        'key_encipherment': False,
+        'data_encipherment': False,
+        'key_agreement': False,
+        'key_cert_sign': False,
+        'crl_sign': False,
+        'encipher_only': False,
+        'decipher_only': False,
+    }
+
+EXT_KEY_USAGE_MAPPING = {
+    'server_auth': ExtendedKeyUsageOID.SERVER_AUTH,
+    'client_auth': ExtendedKeyUsageOID.CLIENT_AUTH,
+    'code_signing': ExtendedKeyUsageOID.CODE_SIGNING,
+    'email_protection': ExtendedKeyUsageOID.EMAIL_PROTECTION,
+    'time_stamping': ExtendedKeyUsageOID.TIME_STAMPING,
+    'ocsp_signing': ExtendedKeyUsageOID.OCSP_SIGNING,
+}
+
 
 class PrivateKey(object):
 
@@ -66,7 +88,6 @@ class PrivateKey(object):
         return self._key.key_size
 
     _public_key = None
-
     @property
     def public_key(self):
         if self._public_key is None:
@@ -114,12 +135,27 @@ class PrivateKey(object):
         signer.update(message)
         return signer.finalize()
 
-    def _make_cert(self, subject_attrs, issuer_attrs, is_ca=False):
+    def _sign_csr(self, csr, signing_cert=None, is_ca=False):
+        if not csr._csr.is_signature_valid:
+            raise Error('CSR signature is invalid')
+
+        new_serial = int(uuid4())
+        subject_attrs = csr.attribs
+        pubkey = csr.public_key.raw
+
+        if signing_cert is None:
+            # self-signed cert
+            issuer_attrs = subject_attrs
+            signing_serial = new_serial
+            signing_pubkey = pubkey
+        else:
+            issuer_attrs = signing_cert.subject.attribs
+            signing_serial = signing_cert.serial_number
+            signing_pubkey = signing_cert.public_key.raw
+
         builder = x509.CertificateBuilder()
         subject_list = _attribDict2x509List(subject_attrs)
         issuer_list = _attribDict2x509List(issuer_attrs)
-        pubkey = self._key.public_key()
-        serial = int(uuid4())
 
         builder = builder.subject_name(x509.Name(subject_list))
         issuer_name = x509.Name(issuer_list)
@@ -128,41 +164,39 @@ class PrivateKey(object):
             datetime.today() - timedelta(days=1))
         builder = builder.not_valid_after(
             datetime.today() + timedelta(days=2 * 365))
-        builder = builder.serial_number(serial)
+        builder = builder.serial_number(new_serial)
         builder = builder.public_key(pubkey)
 
-        # extensions
-        if is_ca:
-            # Subject Key Identifier
-            ski = x509.SubjectKeyIdentifier.from_public_key(pubkey)
-            builder = builder.add_extension(ski, True)
-            
-            # AuthorityKeyIdentifier
-            aki = x509.AuthorityKeyIdentifier(
-                key_identifier=ski.digest,
-                authority_cert_issuer=[DirectoryName(issuer_name)],
-                authority_cert_serial_number=serial)
-            builder = builder.add_extension(aki, True)
+        # Subject Key Identifier
+        ski = x509.SubjectKeyIdentifier.from_public_key(pubkey)
+        builder = builder.add_extension(ski, False)
 
-            # Key Usage
-            builder = builder.add_extension(KeyUsage(
-                digital_signature=False,
-                content_commitment=False,
-                key_encipherment=False,
-                data_encipherment=False,
-                key_agreement=False,
-                key_cert_sign=True,
-                crl_sign=True,
-                encipher_only=False,
-                decipher_only=False,
-            ), True)
+        # AuthorityKeyIdentifier
+        cert_ski = x509.SubjectKeyIdentifier.from_public_key(signing_pubkey)
+        aki = x509.AuthorityKeyIdentifier(
+            key_identifier=cert_ski.digest,
+            authority_cert_issuer=[DirectoryName(issuer_name)],
+            authority_cert_serial_number=signing_serial)
+        builder = builder.add_extension(aki, False)
+
+        # KeyUsage
+        key_usage = base_key_usage()
+        key_usage.update(csr.extensions.get('key_usage', {}))
+        builder = builder.add_extension(KeyUsage(**key_usage), False)
+
+        # ExtendedKeyUsage
+        ext_key_usage = {}
+        ext_key_usage.update(csr.extensions.get('extended_key_usage', {}))
+        if ext_key_usage:
+            oid_list = [EXT_KEY_USAGE_MAPPING[k] for k,v in ext_key_usage.items() if v]
+            builder = builder.add_extension(ExtendedKeyUsage(oid_list), False)
 
         path_length = None
         if is_ca:
             path_length = 0
         builder = builder.add_extension(
             x509.BasicConstraints(ca=is_ca, path_length=path_length),
-            critical=True,
+            critical=False,
         )
         certificate = builder.sign(
             private_key=self._key, algorithm=hashes.SHA256(),
@@ -171,12 +205,17 @@ class PrivateKey(object):
         return Certificate(certificate)
 
     def self_signed_cert(self, attribs=None):
-        return self._make_cert(attribs, attribs, is_ca=True)
+        # for a CA
+        csr = CSR.create(self, attribs, key_usage={
+            'crl_sign': True,
+            'key_cert_sign': True,
+        })
+        # key_usage['crl_sign'] = True
+        # key_usage['key_cert_sign'] = True
+        return self._sign_csr(csr, is_ca=True)
 
     def sign_csr(self, csr, cert):
-        if not csr._csr.is_signature_valid:
-            raise Error('CSR signature is invalid')
-        return self._make_cert(csr.attribs, cert.subject.attribs)
+        return self._sign_csr(csr, cert)
 
     def signing_request(self, *args, **kwargs):
         return CSR.create(self, *args, **kwargs)
@@ -195,6 +234,10 @@ class PublicKey(object):
         public_key = serialization.load_pem_public_key(
             data, default_backend())
         return PublicKey(public_key)
+
+    @property
+    def raw(self):
+        return self._key
 
     def save(self, filename):
         with open(filename, 'wb') as fh:
@@ -265,13 +308,20 @@ def _x509Ext2Dict(extensions):
                 if len(val['issuer']) == 1:
                     val['issuer'] = val['issuer'][0]
             elif name == 'key_usage':
-                tmp = []
+                tmp = {}
                 for k in KEY_USAGE_ATTRS:
                     try:
-                        if getattr(val, k, None):
-                            tmp.append(k)
+                        tmp[k] = getattr(val, k, False)
                     except ValueError:
-                        pass
+                        tmp[k] = None
+                val = tmp
+            elif name == 'extended_key_usage':
+                tmp = {}
+                for k,v in EXT_KEY_USAGE_MAPPING.items():
+                    if v in val:
+                        tmp[k] = True
+                    else:
+                        tmp[k] = False
                 val = tmp
             ret[name] = val
     return ret
@@ -288,20 +338,38 @@ class CSR(object):
     def __init__(self, _csr):
         self._csr = _csr
 
-    _attribs = None
-
-    @property
-    def attribs(self):
-        if self._attribs is None:
-            self._attribs = _x509Name2attribDict(self._csr.subject)
-        return self._attribs
-
     @classmethod
-    def create(cls, private_key, attribs=None):
+    def create(cls, private_key, attribs=None, key_usage=None, extended_key_usage=None,
+            server=None):
         attrib_list = _attribDict2x509List(attribs)
-        csr = x509.CertificateSigningRequestBuilder().subject_name(
-            x509.Name(attrib_list)
-        ).sign(private_key._key, hashes.SHA256(), default_backend())
+        
+        if server:
+            key_usage = key_usage or {}
+            key_usage['key_encipherment'] = True
+            key_usage['digital_signature'] = True
+
+            extended_key_usage = extended_key_usage or {}
+            extended_key_usage['server_auth'] = True
+
+        builder = x509.CertificateSigningRequestBuilder()
+        builder = builder.subject_name(x509.Name(attrib_list))
+
+        # Subject Key Identifier
+        ski = x509.SubjectKeyIdentifier.from_public_key(
+            private_key._key.public_key())
+        builder = builder.add_extension(ski, False)
+
+        # KeyUsage
+        if key_usage:
+            ku = base_key_usage()
+            ku.update(key_usage)
+            builder = builder.add_extension(KeyUsage(**ku), False)
+
+        if extended_key_usage:
+            oid_list = [EXT_KEY_USAGE_MAPPING[k] for k,v in extended_key_usage.items() if v]
+            builder = builder.add_extension(ExtendedKeyUsage(oid_list), False)
+        
+        csr = builder.sign(private_key._key, hashes.SHA256(), default_backend())
         return CSR(csr)
 
     @classmethod
@@ -320,6 +388,27 @@ class CSR(object):
     def dump(self):
         return self._csr.public_bytes(serialization.Encoding.PEM)
 
+    _attribs = None
+    @property
+    def attribs(self):
+        if self._attribs is None:
+            self._attribs = _x509Name2attribDict(self._csr.subject)
+        return self._attribs
+
+    _public_key = None
+    @property
+    def public_key(self):
+        if self._public_key is None:
+            self._public_key = PublicKey(self._csr.public_key())
+        return self._public_key
+
+    _extensions = None
+    @property
+    def extensions(self):
+        if self._extensions is None:
+            self._extensions = _x509Ext2Dict(self._csr.extensions)
+        return self._extensions
+
 
 class Certificate(object):
 
@@ -328,6 +417,13 @@ class Certificate(object):
         self.subject = _CertificateNameHolder(_cert.subject)
         self.issuer = _CertificateNameHolder(_cert.issuer)
         self.serial_number = _cert.serial
+
+    _public_key = None
+    @property
+    def public_key(self):
+        if self._public_key is None:
+            self._public_key = PublicKey(self._cert.public_key())
+        return self._public_key
 
     @classmethod
     def load(cls, data=None, filename=None):
