@@ -28,12 +28,13 @@ Create a self-signed CA certificate:
 
     humancrypto self-signed-cert ca.key ca.crt -d common_name=jim
 
-Create a signed certificate for another key:
+Create a signed certificate for a server key:
 
     humancrypto create-private server.key
-    humancrypto create-csr server.key server.csr -d common_name=bob
+    humancrypto create-csr server.key server.csr -d common_name=bob --server
     humancrypto sign-csr ca.key ca.crt server.csr server.crt
 
+(And use `--client` for a client key).
 
 ## Library usage
 
@@ -61,16 +62,18 @@ Create a self-signed Certificate:
 u'bob'
 ```
 
-Create a Certificate Signing Request (CSR):
+Create a server-friendly Certificate Signing Request (CSR):
 
 ```python
 >>> from humancrypto import CSR
->>> csr = CSR(key, {'common_name': u'bob'})
->>> csr = key.signing_request({'common_name': u'bob'}) # equivalent
+>>> csr = CSR(key, {'common_name': u'bob'}, server=True)
+>>> csr = key.signing_request({'common_name': u'bob'}, server=True) # equivalent
 >>> csr.attribs['common_name']
 u'bob'
 >>> csr.save('ca.csr')
 ```
+
+Use `client=True` instead of `server=True` if you want a client.
 
 Sign a CSR:
 
@@ -80,26 +83,6 @@ Sign a CSR:
 u'bob'
 >>> cert.save('ca.cert')
 ```
-
-<!--
-XXX Verify that a certificate was signed by a private key:
-
-```python
->>> key.verify(cert)
-```
-
--->
-
-<!--
-XXX Verify a certificate with a CA certificate:
-
-```python
->>> ca_cert.did_sign(presented_cert)
-True
->>> presented_cert.attribs['common_name']
-'foo'
-```
--->
 
 
 ## Notes

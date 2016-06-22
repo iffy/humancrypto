@@ -104,6 +104,14 @@ p.add_argument(
     '-d', '--data',
     action='append',
     help='Subject attributes. (e.g. common_name=jim)')
+p.add_argument(
+    '--server',
+    action='store_true',
+    help='If given, use sane server-certificate defaults.')
+p.add_argument(
+    '--client',
+    action='store_true',
+    help='If given, use sane client-certificate defaults.')
 
 
 @do(p)
@@ -115,7 +123,7 @@ def create_csr(args):
             value = value.decode('utf-8')
         attribs[key] = value
     priv = PrivateKey.load(filename=args.privatekey)
-    csr = priv.signing_request(attribs)
+    csr = priv.signing_request(attribs, server=args.server, client=args.client)
     csr.save(args.csr)
     out('wrote', args.csr)
 

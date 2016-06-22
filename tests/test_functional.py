@@ -194,3 +194,92 @@ class TestCertificate(object):
         second = Certificate.load(filename=fh.strpath)
         assert first.dump() == second.dump()
         # no permission assertions
+
+    def test_ca(self):
+        """
+        CA certificates should have the right x509 extensions
+        """
+        priv = PrivateKey.create()
+        cert = priv.self_signed_cert({'common_name': u'CA'})
+
+        # Basic Constraints
+        assert cert.extensions['basic_constraints']['ca'] is True
+
+        # Subject Key Identifier
+        assert cert.extensions['subject_key_identifier'] is not None
+
+        # Authority Key Identifier
+        assert cert.extensions['authority_key_identifier'] is not None
+        aki = cert.extensions['authority_key_identifier']
+        assert aki['keyid'] == cert.extensions['subject_key_identifier']
+        assert aki['serial'] == cert.serial_number
+        assert aki['issuer'] == cert.issuer.attribs
+
+        # Key Usage
+        assert cert.extensions['key_usage']['key_cert_sign'] is True
+        assert cert.extensions['key_usage']['crl_sign'] is True
+
+    def test_server_cert(self):
+        """
+        Certificates for servers should have the right x509 extensions
+        """
+        priv = PrivateKey.create()
+        ca_cert = priv.self_signed_cert({'common_name': u'CA'})
+
+        priv2 = PrivateKey.create()
+        csr = priv2.signing_request({'common_name': u'Bo'}, server=True)
+        cert = priv.sign_csr(csr, ca_cert)
+
+        # Basic Constraints
+        assert cert.extensions['basic_constraints']['ca'] is False
+
+        # Subject Key Identifier
+        assert cert.extensions['subject_key_identifier'] != \
+            ca_cert.extensions['subject_key_identifier'], \
+            "The subject of the cert should not be the signing cert"
+
+        # Authority Key Identifier
+        assert cert.extensions['authority_key_identifier'] is not None
+        aki = cert.extensions['authority_key_identifier']
+        assert aki['keyid'] == ca_cert.extensions['subject_key_identifier']
+        assert aki['serial'] == ca_cert.serial_number
+        assert aki['issuer'] == ca_cert.issuer.attribs
+
+        # Key Usage
+        assert cert.extensions['key_usage']['key_encipherment'] is True
+        assert cert.extensions['key_usage']['digital_signature'] is True
+
+        # Extended Key Usage
+        assert cert.extensions['extended_key_usage']['server_auth'] is True
+
+    def test_client_cert(self):
+        """
+        Certificates for clients should have the right x509 extensions
+        """
+        priv = PrivateKey.create()
+        ca_cert = priv.self_signed_cert({'common_name': u'CA'})
+
+        priv2 = PrivateKey.create()
+        csr = priv2.signing_request({'common_name': u'Bo'}, client=True)
+        cert = priv.sign_csr(csr, ca_cert)
+
+        # Basic Constraints
+        assert cert.extensions['basic_constraints']['ca'] is False
+
+        # Subject Key Identifier
+        assert cert.extensions['subject_key_identifier'] != \
+            ca_cert.extensions['subject_key_identifier'], \
+            "The subject of the cert should not be the signing cert"
+
+        # Authority Key Identifier
+        assert cert.extensions['authority_key_identifier'] is not None
+        aki = cert.extensions['authority_key_identifier']
+        assert aki['keyid'] == ca_cert.extensions['subject_key_identifier']
+        assert aki['serial'] == ca_cert.serial_number
+        assert aki['issuer'] == ca_cert.issuer.attribs
+
+        # Key Usage
+        assert cert.extensions['key_usage']['digital_signature'] is True
+
+        # Extended Key Usage
+        assert cert.extensions['extended_key_usage']['client_auth'] is True
