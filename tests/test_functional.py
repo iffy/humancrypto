@@ -201,7 +201,7 @@ class TestCertificate(object):
         """
         priv = PrivateKey.create()
         cert = priv.self_signed_cert({'common_name': u'CA'})
-        
+
         # Basic Constraints
         assert cert.extensions['basic_constraints']['ca'] is True
 

@@ -55,6 +55,7 @@ KEY_USAGE_ATTRS = [
     'decipher_only',
 ]
 
+
 def base_key_usage():
     return {
         'digital_signature': False,
@@ -67,6 +68,7 @@ def base_key_usage():
         'encipher_only': False,
         'decipher_only': False,
     }
+
 
 EXT_KEY_USAGE_MAPPING = {
     'server_auth': ExtendedKeyUsageOID.SERVER_AUTH,
@@ -88,6 +90,7 @@ class PrivateKey(object):
         return self._key.key_size
 
     _public_key = None
+
     @property
     def public_key(self):
         if self._public_key is None:
@@ -188,7 +191,8 @@ class PrivateKey(object):
         ext_key_usage = {}
         ext_key_usage.update(csr.extensions.get('extended_key_usage', {}))
         if ext_key_usage:
-            oid_list = [EXT_KEY_USAGE_MAPPING[k] for k,v in ext_key_usage.items() if v]
+            oid_list = [EXT_KEY_USAGE_MAPPING[k] for k, v in
+                        ext_key_usage.items() if v]
             builder = builder.add_extension(ExtendedKeyUsage(oid_list), False)
 
         path_length = None
@@ -272,6 +276,7 @@ def _attribDict2x509List(attribs):
             attrib_list.append(x509.NameAttribute(oid, single_value))
     return attrib_list
 
+
 def _x509Name2attribDict(instance):
     a = {}
     for name, oid in OID_MAPPING.items():
@@ -282,6 +287,7 @@ def _x509Name2attribDict(instance):
             a[name] = [x.value for x in values]
     return a
 
+
 def _x509Ext2Dict(extensions):
     ret = {}
     for name, oid in EXT_OID_MAPPING.items():
@@ -291,13 +297,14 @@ def _x509Ext2Dict(extensions):
             continue
         if value:
             val = value.value
-            
+
             if name == 'basic_constraints':
                 val = _basicConstraints2Dict(val)
             elif name == 'subject_key_identifier':
                 val = val.digest
             elif name == 'authority_key_identifier':
-                issuer = [_CertificateNameHolder(x.value).attribs for x in val.authority_cert_issuer]
+                issuer = [_CertificateNameHolder(x.value).attribs for x
+                          in val.authority_cert_issuer]
                 val = {
                     'keyid': val.key_identifier,
                     'serial': val.authority_cert_serial_number,
@@ -315,7 +322,7 @@ def _x509Ext2Dict(extensions):
                 val = tmp
             elif name == 'extended_key_usage':
                 tmp = {}
-                for k,v in EXT_KEY_USAGE_MAPPING.items():
+                for k, v in EXT_KEY_USAGE_MAPPING.items():
                     if v in val:
                         tmp[k] = True
                     else:
@@ -323,6 +330,7 @@ def _x509Ext2Dict(extensions):
                 val = tmp
             ret[name] = val
     return ret
+
 
 def _basicConstraints2Dict(basic_constraints):
     return {
@@ -337,21 +345,29 @@ class CSR(object):
         self._csr = _csr
 
     @classmethod
-    def create(cls, private_key, attribs=None, key_usage=None, extended_key_usage=None,
-            server=None, client=None):
+    def create(
+            cls,
+            private_key,
+            attribs=None,
+            key_usage=None,
+            extended_key_usage=None,
+            server=None,
+            client=None):
         """
         @param private_key: A PrivateKey instance
-        @param attribs: A dictionary of attributes to put in the certificate's subject
+        @param attribs: A dictionary of attributes to put in the certificate's
+            subject
         @param key_usage: A dictionary of key usage properties.  Keys
             come from KEY_USAGE_ATTRS and values are True/False.
-        @param extended_key_usage: A dictionary of extended key usage properties.
-            Keys come from EXT_KEY_USAGE_MAPPING and values are True/False.
+        @param extended_key_usage: A dictionary of extended key usage
+            properties. Keys come from EXT_KEY_USAGE_MAPPING and values
+            are True/False.
 
-        @param server: If True, this certificate is for a server and key_usage,extended_key_usage
-            will be set to sane defaults.
+        @param server: If True, this certificate is for a server and
+            key_usage/extended_key_usage will be set to sane defaults.
 
-        @param client: If True, this certificate is for a web client and key_usage,extended_key_usage
-            will be set to sane defaults.
+        @param client: If True, this certificate is for a web client and
+            key_usage/extended_key_usage will be set to sane defaults.
         """
         attrib_list = _attribDict2x509List(attribs)
         key_usage = key_usage or {}
@@ -381,10 +397,14 @@ class CSR(object):
             builder = builder.add_extension(KeyUsage(**ku), False)
 
         if extended_key_usage:
-            oid_list = [EXT_KEY_USAGE_MAPPING[k] for k,v in extended_key_usage.items() if v]
+            oid_list = [EXT_KEY_USAGE_MAPPING[k] for k, v
+                        in extended_key_usage.items() if v]
             builder = builder.add_extension(ExtendedKeyUsage(oid_list), False)
-        
-        csr = builder.sign(private_key._key, hashes.SHA256(), default_backend())
+
+        csr = builder.sign(
+            private_key._key,
+            hashes.SHA256(),
+            default_backend())
         return CSR(csr)
 
     @classmethod
@@ -404,6 +424,7 @@ class CSR(object):
         return self._csr.public_bytes(serialization.Encoding.PEM)
 
     _attribs = None
+
     @property
     def attribs(self):
         if self._attribs is None:
@@ -411,6 +432,7 @@ class CSR(object):
         return self._attribs
 
     _public_key = None
+
     @property
     def public_key(self):
         if self._public_key is None:
@@ -418,6 +440,7 @@ class CSR(object):
         return self._public_key
 
     _extensions = None
+
     @property
     def extensions(self):
         if self._extensions is None:
@@ -434,6 +457,7 @@ class Certificate(object):
         self.serial_number = _cert.serial
 
     _public_key = None
+
     @property
     def public_key(self):
         if self._public_key is None:
@@ -457,6 +481,7 @@ class Certificate(object):
         return self._cert.public_bytes(serialization.Encoding.PEM)
 
     _extensions = None
+
     @property
     def extensions(self):
         if self._extensions is None:
