@@ -210,8 +210,6 @@ class PrivateKey(object):
             'crl_sign': True,
             'key_cert_sign': True,
         })
-        # key_usage['crl_sign'] = True
-        # key_usage['key_cert_sign'] = True
         return self._sign_csr(csr, is_ca=True)
 
     def sign_csr(self, csr, cert):
@@ -340,16 +338,33 @@ class CSR(object):
 
     @classmethod
     def create(cls, private_key, attribs=None, key_usage=None, extended_key_usage=None,
-            server=None):
+            server=None, client=None):
+        """
+        @param private_key: A PrivateKey instance
+        @param attribs: A dictionary of attributes to put in the certificate's subject
+        @param key_usage: A dictionary of key usage properties.  Keys
+            come from KEY_USAGE_ATTRS and values are True/False.
+        @param extended_key_usage: A dictionary of extended key usage properties.
+            Keys come from EXT_KEY_USAGE_MAPPING and values are True/False.
+
+        @param server: If True, this certificate is for a server and key_usage,extended_key_usage
+            will be set to sane defaults.
+
+        @param client: If True, this certificate is for a web client and key_usage,extended_key_usage
+            will be set to sane defaults.
+        """
         attrib_list = _attribDict2x509List(attribs)
-        
+        key_usage = key_usage or {}
+        extended_key_usage = extended_key_usage or {}
+
         if server:
-            key_usage = key_usage or {}
             key_usage['key_encipherment'] = True
             key_usage['digital_signature'] = True
-
-            extended_key_usage = extended_key_usage or {}
             extended_key_usage['server_auth'] = True
+
+        if client:
+            key_usage['digital_signature'] = True
+            extended_key_usage['client_auth'] = True
 
         builder = x509.CertificateSigningRequestBuilder()
         builder = builder.subject_name(x509.Name(attrib_list))
