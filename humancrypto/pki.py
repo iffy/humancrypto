@@ -277,6 +277,18 @@ def _attribDict2x509List(attribs):
     return attrib_list
 
 
+def _extAttribDict2x509List(extensions):
+    extensions = extensions or {}
+    ext_list = []
+    for nice_name, values in extensions.items():
+        oid = EXT_OID_MAPPING[nice_name]
+        if not isinstance(values, list):
+            values = [values]
+        for single_value in values:
+            ext_list.append(x509.NameAttribute(oid, single_value))
+    return ext_list    
+
+
 def _x509Name2attribDict(instance):
     a = {}
     for name, oid in OID_MAPPING.items():
@@ -289,6 +301,9 @@ def _x509Name2attribDict(instance):
 
 
 def _x509Ext2Dict(extensions):
+    """
+    Read cryptography extensions and return a dict.
+    """
     ret = {}
     for name, oid in EXT_OID_MAPPING.items():
         try:
@@ -350,13 +365,14 @@ class CSR(object):
             private_key,
             attribs=None,
             key_usage=None,
+            extensions=None,
             extended_key_usage=None,
             server=None,
             client=None):
         """
         @param private_key: A PrivateKey instance
         @param attribs: A dictionary of attributes to put in the certificate's
-            subject
+            subject.  Can include extended attributes, too.
         @param key_usage: A dictionary of key usage properties.  Keys
             come from KEY_USAGE_ATTRS and values are True/False.
         @param extended_key_usage: A dictionary of extended key usage
@@ -370,6 +386,7 @@ class CSR(object):
             key_usage/extended_key_usage will be set to sane defaults.
         """
         attrib_list = _attribDict2x509List(attribs)
+        ext_list = _extAttribDict2x509List(extensions)
         key_usage = key_usage or {}
         extended_key_usage = extended_key_usage or {}
 
