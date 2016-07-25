@@ -54,11 +54,11 @@ class TestCLI(object):
         main([
             'create-csr', keyfile.strpath, csrfile.strpath,
             '--common-name', 'jim',
-            '--subject-alt-name', 'jose',
+            '--subject-alternative-name', 'dns:jose',
         ])
         csr = CSR.load(filename=csrfile.strpath)
         assert csr.attribs['common_name'] == u'jim'
-        assert csr.extensions['subject_alternative_name'] == u'jose'
+        assert csr.extensions['subject_alternative_name']['dns'] == [u'jose']
 
     def test_sign_csr(self, tmpdir):
         cakey = tmpdir.join('ca.key')

@@ -22,10 +22,30 @@ def _acceptBasicAttributes(parser):
         ckey = key.replace('_', '-')
         parser.add_argument('--{0}'.format(ckey), action='append')
 
+
 def _basicAttributes2Dict(args):
     ret = {}
     for key in pki.OID_MAPPING:
         values = getattr(args, key)
+        if values is None:
+            continue
+        clean_values = []
+        for val in values:
+            if not isinstance(val, six.text_type):
+                val = val.decode('utf-8')
+            clean_values.append(val)
+        ret[key] = clean_values
+    return ret
+
+
+def _acceptSomeExtendedAttributes(parser):
+    parser.add_argument('--subject-alternative-name', action='append')
+
+
+def _extAttributes2Dict(args):
+    ret = {}
+    for key in pki.EXT_MAPPING:
+        values = getattr(args, key, None)
         if values is None:
             continue
         clean_values = []
@@ -122,16 +142,19 @@ p.add_argument(
     action='store_true',
     help='If given, use sane client-certificate defaults.')
 _acceptBasicAttributes(p)
+_acceptSomeExtendedAttributes(p)
 
 
 @do(p)
 def create_csr(args):
     attribs = _basicAttributes2Dict(args)
-    extensions = {}
+    extensions = _extAttributes2Dict(args)
     priv = PrivateKey.load(filename=args.privatekey)
-    csr = priv.signing_request(attribs,
+    csr = priv.signing_request(
+        attribs,
         extensions=extensions,
-        server=args.server, client=args.client)
+        server=args.server,
+        client=args.client)
     csr.save(args.csr)
     out('wrote', args.csr)
 
