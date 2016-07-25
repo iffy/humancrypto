@@ -3,6 +3,7 @@ import argparse
 
 import six
 from humancrypto import PrivateKey, Certificate, CSR
+from humancrypto import pki
 
 
 def do(parser):
@@ -14,6 +15,46 @@ def do(parser):
 
 def out(*x):
     print(*x)
+
+
+def _acceptBasicAttributes(parser):
+    for key in sorted(pki.OID_MAPPING):
+        ckey = key.replace('_', '-')
+        parser.add_argument('--{0}'.format(ckey), action='append')
+
+
+def _basicAttributes2Dict(args):
+    ret = {}
+    for key in pki.OID_MAPPING:
+        values = getattr(args, key)
+        if values is None:
+            continue
+        clean_values = []
+        for val in values:
+            if not isinstance(val, six.text_type):
+                val = val.decode('utf-8')
+            clean_values.append(val)
+        ret[key] = clean_values
+    return ret
+
+
+def _acceptSomeExtendedAttributes(parser):
+    parser.add_argument('--subject-alternative-name', action='append')
+
+
+def _extAttributes2Dict(args):
+    ret = {}
+    for key in pki.EXT_MAPPING:
+        values = getattr(args, key, None)
+        if values is None:
+            continue
+        clean_values = []
+        for val in values:
+            if not isinstance(val, six.text_type):
+                val = val.decode('utf-8')
+            clean_values.append(val)
+        ret[key] = clean_values
+    return ret
 
 
 ap = argparse.ArgumentParser()
@@ -69,20 +110,12 @@ p.add_argument(
 p.add_argument(
     'certfile',
     help='Certificate filename')
-p.add_argument(
-    '-d', '--data',
-    action='append',
-    help='Subject/Issuer attributes. (e.g. common_name=jim)')
+_acceptBasicAttributes(p)
 
 
 @do(p)
 def self_signed_cert(args):
-    attribs = {}
-    for arg in (args.data or []):
-        key, value = arg.split('=', 1)
-        if not isinstance(value, six.text_type):
-            value = value.decode('utf-8')
-        attribs[key] = value
+    attribs = _basicAttributes2Dict(args)
     priv = PrivateKey.load(filename=args.privatekey)
     cert = priv.self_signed_cert(attribs)
     cert.save(args.certfile)
@@ -101,10 +134,6 @@ p.add_argument(
     'csr',
     help='CSR filename')
 p.add_argument(
-    '-d', '--data',
-    action='append',
-    help='Subject attributes. (e.g. common_name=jim)')
-p.add_argument(
     '--server',
     action='store_true',
     help='If given, use sane server-certificate defaults.')
@@ -112,18 +141,20 @@ p.add_argument(
     '--client',
     action='store_true',
     help='If given, use sane client-certificate defaults.')
+_acceptBasicAttributes(p)
+_acceptSomeExtendedAttributes(p)
 
 
 @do(p)
 def create_csr(args):
-    attribs = {}
-    for arg in (args.data or []):
-        key, value = arg.split('=', 1)
-        if not isinstance(value, six.text_type):
-            value = value.decode('utf-8')
-        attribs[key] = value
+    attribs = _basicAttributes2Dict(args)
+    extensions = _extAttributes2Dict(args)
     priv = PrivateKey.load(filename=args.privatekey)
-    csr = priv.signing_request(attribs, server=args.server, client=args.client)
+    csr = priv.signing_request(
+        attribs,
+        extensions=extensions,
+        server=args.server,
+        client=args.client)
     csr.save(args.csr)
     out('wrote', args.csr)
 

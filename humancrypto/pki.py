@@ -4,8 +4,11 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography import x509
 from cryptography.x509.oid import NameOID, ExtensionOID, ExtendedKeyUsageOID
-from cryptography.x509.general_name import DirectoryName
+from cryptography.x509.general_name import DirectoryName, DNSName, IPAddress
 from cryptography.x509 import KeyUsage, ExtendedKeyUsage
+from cryptography.x509 import SubjectAlternativeName
+
+import ipaddress
 
 import os
 import stat
@@ -25,23 +28,55 @@ OID_MAPPING = {
     'email': NameOID.EMAIL_ADDRESS,
 }
 
-EXT_OID_MAPPING = {
-    'basic_constraints': ExtensionOID.BASIC_CONSTRAINTS,
-    'key_usage': ExtensionOID.KEY_USAGE,
-    'subject_alternative_name': ExtensionOID.SUBJECT_ALTERNATIVE_NAME,
-    'issuer_alternative_name': ExtensionOID.ISSUER_ALTERNATIVE_NAME,
-    'subject_key_identifier': ExtensionOID.SUBJECT_KEY_IDENTIFIER,
-    'name_constraints': ExtensionOID.NAME_CONSTRAINTS,
-    'crl_distribution_points': ExtensionOID.CRL_DISTRIBUTION_POINTS,
-    'certificate_policies': ExtensionOID.CERTIFICATE_POLICIES,
-    'authority_key_identifier': ExtensionOID.AUTHORITY_KEY_IDENTIFIER,
-    'extended_key_usage': ExtensionOID.EXTENDED_KEY_USAGE,
-    'authority_information_access': ExtensionOID.AUTHORITY_INFORMATION_ACCESS,
-    'inhibit_any_policy': ExtensionOID.INHIBIT_ANY_POLICY,
-    'ocsp_no_check': ExtensionOID.OCSP_NO_CHECK,
-    'crl_number': ExtensionOID.CRL_NUMBER,
-    'policy_constraints': ExtensionOID.POLICY_CONSTRAINTS,
+
+EXT_MAPPING = {
+    'basic_constraints': {
+        'oid': ExtensionOID.BASIC_CONSTRAINTS,
+    },
+    'key_usage': {
+        'oid': ExtensionOID.KEY_USAGE,
+    },
+    'subject_alternative_name': {
+        'oid': ExtensionOID.SUBJECT_ALTERNATIVE_NAME,
+    },
+    'issuer_alternative_name': {
+        'oid': ExtensionOID.ISSUER_ALTERNATIVE_NAME,
+    },
+    'subject_key_identifier': {
+        'oid': ExtensionOID.SUBJECT_KEY_IDENTIFIER,
+    },
+    'name_constraints': {
+        'oid': ExtensionOID.NAME_CONSTRAINTS,
+    },
+    'crl_distribution_points': {
+        'oid': ExtensionOID.CRL_DISTRIBUTION_POINTS,
+    },
+    'certificate_policies': {
+        'oid': ExtensionOID.CERTIFICATE_POLICIES,
+    },
+    'authority_key_identifier': {
+        'oid': ExtensionOID.AUTHORITY_KEY_IDENTIFIER,
+    },
+    'extended_key_usage': {
+        'oid': ExtensionOID.EXTENDED_KEY_USAGE,
+    },
+    'authority_information_access': {
+        'oid': ExtensionOID.AUTHORITY_INFORMATION_ACCESS,
+    },
+    'inhibit_any_policy': {
+        'oid': ExtensionOID.INHIBIT_ANY_POLICY,
+    },
+    'ocsp_no_check': {
+        'oid': ExtensionOID.OCSP_NO_CHECK,
+    },
+    'crl_number': {
+        'oid': ExtensionOID.CRL_NUMBER,
+    },
+    'policy_constraints': {
+        'oid': ExtensionOID.POLICY_CONSTRAINTS,
+    },
 }
+
 
 KEY_USAGE_ATTRS = [
     'digital_signature',
@@ -195,6 +230,19 @@ class PrivateKey(object):
                         ext_key_usage.items() if v]
             builder = builder.add_extension(ExtendedKeyUsage(oid_list), False)
 
+        # Other extensions
+        for key, val in csr.extensions.items():
+            if key == 'subject_alternative_name':
+                names = []
+                names.extend([
+                    IPAddress(ipaddress.ip_address(x)) for x
+                    in val.get('ip', [])])
+                names.extend([
+                    DNSName(ipaddress.ip_address(x)) for x
+                    in val.get('dns', [])])
+                builder = builder.add_extension(
+                    SubjectAlternativeName(names), False)
+
         path_length = None
         if is_ca:
             path_length = 0
@@ -277,6 +325,37 @@ def _attribDict2x509List(attribs):
     return attrib_list
 
 
+def _extAttribDict2x509List(extensions):
+    extensions = extensions or {}
+    ext_list = []
+
+    # SubjectAlternativeName
+    values = extensions.get('subject_alternative_name')
+    if values:
+        if not isinstance(values, list):
+            values = [values]
+        general_name_values = []
+        for pair in values:
+            try:
+                type_, value = pair.split(':')
+                type_ = type_.lower()
+                if type_ not in ['ip', 'dns']:
+                    raise ValueError()
+            except ValueError:
+                raise ValueError(
+                    'subject_alternative_name must be prefixed'
+                    ' with type "ip" or "dns" (e.g. "ip:10.1.1.1")'
+                    ' invalid value: {0!r}'.format(pair))
+            if type_ == 'ip':
+                value = IPAddress(ipaddress.ip_address(value))
+            elif type_ == 'dns':
+                value = DNSName(value)
+            general_name_values.append(value)
+        ext_list.append(SubjectAlternativeName(general_name_values))
+
+    return ext_list
+
+
 def _x509Name2attribDict(instance):
     a = {}
     for name, oid in OID_MAPPING.items():
@@ -289,12 +368,17 @@ def _x509Name2attribDict(instance):
 
 
 def _x509Ext2Dict(extensions):
+    """
+    Read cryptography extensions and return a dict.
+    """
     ret = {}
-    for name, oid in EXT_OID_MAPPING.items():
+    for name, data in EXT_MAPPING.items():
+        oid = data['oid']
         try:
             value = extensions.get_extension_for_oid(oid)
         except x509.ExtensionNotFound:
             continue
+
         if value:
             val = value.value
 
@@ -328,6 +412,14 @@ def _x509Ext2Dict(extensions):
                     else:
                         tmp[k] = False
                 val = tmp
+            elif name == 'subject_alternative_name':
+                val = {
+                    'ip': [x.exploded for x
+                           in val.get_values_for_type(IPAddress)],
+                    'dns': val.get_values_for_type(DNSName),
+                }
+            else:
+                pass
             ret[name] = val
     return ret
 
@@ -349,6 +441,7 @@ class CSR(object):
             cls,
             private_key,
             attribs=None,
+            extensions=None,
             key_usage=None,
             extended_key_usage=None,
             server=None,
@@ -356,7 +449,8 @@ class CSR(object):
         """
         @param private_key: A PrivateKey instance
         @param attribs: A dictionary of attributes to put in the certificate's
-            subject
+            subject.
+        @param extensions: Additional extended attributes to put in.
         @param key_usage: A dictionary of key usage properties.  Keys
             come from KEY_USAGE_ATTRS and values are True/False.
         @param extended_key_usage: A dictionary of extended key usage
@@ -370,6 +464,7 @@ class CSR(object):
             key_usage/extended_key_usage will be set to sane defaults.
         """
         attrib_list = _attribDict2x509List(attribs)
+        ext_list = _extAttribDict2x509List(extensions)
         key_usage = key_usage or {}
         extended_key_usage = extended_key_usage or {}
 
@@ -400,6 +495,9 @@ class CSR(object):
             oid_list = [EXT_KEY_USAGE_MAPPING[k] for k, v
                         in extended_key_usage.items() if v]
             builder = builder.add_extension(ExtendedKeyUsage(oid_list), False)
+
+        for ext in ext_list:
+            builder = builder.add_extension(ext, False)
 
         csr = builder.sign(
             private_key._key,

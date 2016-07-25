@@ -26,12 +26,12 @@ Extract a public key:
 
 Create a self-signed CA certificate:
 
-    humancrypto self-signed-cert ca.key ca.crt -d common_name=jim
+    humancrypto self-signed-cert ca.key ca.crt --common-name jim
 
 Create a signed certificate for a server key:
 
     humancrypto create-private server.key
-    humancrypto create-csr server.key server.csr -d common_name=bob --server
+    humancrypto create-csr server.key server.csr --common-name bob --server
     humancrypto sign-csr ca.key ca.crt server.csr server.crt
 
 (And use `--client` for a client key).

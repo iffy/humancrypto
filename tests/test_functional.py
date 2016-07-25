@@ -87,6 +87,20 @@ class TestPrivateKey(object):
         assert cert2.issuer.attribs['common_name'] == u'alice'
         assert cert2.subject.attribs['common_name'] == u'bob'
 
+    def test_sign_csr_subject_alternative_name(self):
+        priv = PrivateKey.create()
+        cert1 = priv.self_signed_cert({'common_name': u'alice'})
+        csr = CSR.create(
+            priv,
+            {'common_name': u'bob'},
+            extensions={'subject_alternative_name': u'ip:10.0.0.0'})
+        cert2 = priv.sign_csr(csr, cert1)
+        assert cert1.subject.attribs == cert2.issuer.attribs
+        assert cert2.issuer.attribs['common_name'] == u'alice'
+        assert cert2.subject.attribs['common_name'] == u'bob'
+        assert cert2.extensions['subject_alternative_name']['ip'] \
+            == [u'10.0.0.0']
+
     def test_sign_csr_invalid_signature(self):
         priv = PrivateKey.create()
         cert1 = priv.self_signed_cert({'common_name': u'alice'})
