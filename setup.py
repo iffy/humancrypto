@@ -1,15 +1,9 @@
 #!/usr/bin/env python
 from setuptools import setup
-import os
-
-_version_filename = os.path.join(
-    os.path.dirname(__file__), 'humancrypto/VERSION')
-version = open(_version_filename, 'rb').read().strip().decode('ascii')
-
 
 setup(
     name='humancrypto',
-    version=version,
+    version='0.1.0',
     description='Cryptography for Humans',
     author='Matt Haggard',
     author_email='haggardii@gmail.com',
