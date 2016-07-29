@@ -1,4 +1,3 @@
-import humancrypto
 from humancrypto.error import UnknownCryptography
 
 import six
@@ -8,9 +7,11 @@ LATEST_YEAR = '2016'
 
 def _getmodule(year):
     if year == '2016':
-        return humancrypto.y2016
+        from humancrypto import y2016
+        return y2016
     elif year == '44bc':
-        return humancrypto.y44bc
+        from humancrypto import y44bc
+        return y44bc
     else:
         raise UnknownCryptography()
 
