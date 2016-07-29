@@ -4,9 +4,14 @@
 
 **DON'T USE THIS IN PRODUCTION!  It's just an idea right now.**
 
-This is essentially [pyca's cryptography](https://pypi.python.org/pypi/cryptography) + sane defaults (for RSA).
+There are two components to this library:
 
-I made this in an attempt to have an even easier and more portable interface than [easy-rsa](https://github.com/OpenVPN/easy-rsa). We'll see how that turns out.
+1. [pyca's cryptography](https://pypi.python.org/pypi/cryptography) + sane defaults for RSA.
+2. Year-defined best-practice cryptography.
+
+I made this in an attempt to have an even easier and more portable interface than [easy-rsa](https://github.com/OpenVPN/easy-rsa) and because it's tricky to know what the current best practices are (since they change over time).
+
+
 
 
 ## Installation
@@ -16,27 +21,64 @@ I made this in an attempt to have an even easier and more portable interface tha
 
 ## Command line usage
 
+### Password Hashing/Storage
+
+*See below for library usage, since command line usage is mostly for testing.*
+
+Store a password using 2016 best practices:
+
+    echo 'mypassword' | humancrypto pw store2016 > stored.out
+
+Verify a password (for any year):
+
+    $ echo 'mypassword' | humancrypto pw verify -i stored.out
+
+
+### RSA Keys
+
 Create a private key:
 
-    humancrypto create-private ca.key
+    humancrypto rsa create-private ca.key
 
 Extract a public key:
 
-    humancrypto extract-public ca.key ca.pub
+    humancrypto rsa extract-public ca.key ca.pub
 
 Create a self-signed CA certificate:
 
-    humancrypto self-signed-cert ca.key ca.crt --common-name jim
+    humancrypto rsa self-signed-cert ca.key ca.crt --common-name jim
 
 Create a signed certificate for a server key:
 
-    humancrypto create-private server.key
-    humancrypto create-csr server.key server.csr --common-name bob --server
-    humancrypto sign-csr ca.key ca.crt server.csr server.crt
+    humancrypto rsa create-private server.key
+    humancrypto rsa create-csr server.key server.csr --common-name bob --server
+    humancrypto rsa sign-csr ca.key ca.crt server.csr server.crt
 
 (And use `--client` for a client key).
 
+
 ## Library usage
+
+### Password Hashing/Storage
+
+Store a password using 2016 best practices:
+
+```python
+>>> from humancrypto.y2016 import store_password
+>>> stored = store_password(b'this is my password')
+```
+
+Check a password hash (for any year):
+
+```python
+>>> from humancrypto.current import verify_password
+>>> verify_password(stored, b'WRONG PASSWORD')
+False
+>>> verify_password(stored, b'this is my password')
+True
+```
+
+### RSA Keys
 
 Create a private key:
 

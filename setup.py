@@ -19,6 +19,7 @@ setup(
     install_requires=[
         'cryptography',
         'six',
+        'argon2_cffi==16.1.0',
     ],
     scripts=[
         'scripts/humancrypto',
