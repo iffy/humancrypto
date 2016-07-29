@@ -4,6 +4,16 @@
 
 **DON'T USE THIS IN PRODUCTION!  It's just an idea right now.**
 
+# tl;dr
+
+Stay up to date with cryptography best practices:
+
+- If it's 2016, use the `y2016` module.
+- If it's 44 B.C., use the `y44bc` module.
+
+
+## Introduction
+
 Do you want to do something cryptographic, but have a hard time keeping up with changing best practices?  This cryptography library makes it easy to know if you're following current best practices.
 
 For instance, in 44 B.C. it was okay to use [ROT13](https://en.wikipedia.org/wiki/ROT13) to store your passwords.  So the `y44bc` module is provided for doing ROT128 (a just-as-secure variation of ROT13):
