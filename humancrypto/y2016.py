@@ -1,5 +1,5 @@
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
+from argon2 import PasswordHasher, exceptions
+
 
 from humancrypto import error
 
@@ -11,10 +11,10 @@ def store_password(password):
 
 
 def verify_password(stored, password):
-    year, h = stored.split(':', 1)
+    year, h = stored.strip().split(':', 1)
     ph = PasswordHasher()
     try:
         ph.verify(h, password)
         return True
-    except VerifyMismatchError:
+    except (exceptions.VerifyMismatchError, exceptions.VerificationError):
         raise error.VerifyMismatchError()

@@ -31,7 +31,7 @@ Store a password using 2016 best practices:
 
 Verify a password (for any year):
 
-    $ echo 'mypassword' | humancrypto pw verify -i stored.out
+    $ echo 'mypassword' | humancrypto pw verify "$(cat stored.out)"
 
 
 ### RSA Keys

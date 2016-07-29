@@ -2,6 +2,8 @@ from __future__ import print_function
 import argparse
 
 import six
+import sys
+import contextlib
 from humancrypto import PrivateKey, Certificate, CSR
 from humancrypto import pki
 
@@ -62,10 +64,60 @@ ap = argparse.ArgumentParser()
 
 sp = ap.add_subparsers(title='subcommands', dest='command')
 
+# ========================================================
+# Passwords
+# ========================================================
+pw_parser = sp.add_parser(
+    'pw',
+    help='Password storage/verification')
+
+pw = pw_parser.add_subparsers(
+    title='subcommands',
+    dest='subcommand')
+
+p = pw.add_parser(
+    'verify',
+    help='Verify that a password matches a stored password.'
+         '  Password is read from stdin.')
+p.add_argument(
+    'stored',
+    help='Stored password.')
+
+
+@do(p)
+def verify(args):
+    from humancrypto.current import verify_password
+    pw = sys.stdin.read()
+    if verify_password(args.stored, pw):
+        out('match')
+
+p = pw.add_parser(
+    'store2016',
+    help='Store a password using 2016 best practices.'
+         '  Password is read from stdin.')
+
+
+@do(p)
+def store2016(args):
+    from humancrypto.y2016 import store_password
+    pw = sys.stdin.read()
+    out(store_password(pw))
+
+# ========================================================
+# RSA
+# ========================================================
+rsa_parser = sp.add_parser(
+    'rsa',
+    help='RSA pub/priv key commands')
+
+rsa = rsa_parser.add_subparsers(
+    title='subcommands',
+    dest='subcommand')
+
 # --------------------------------------------------------
 # create-private
 # --------------------------------------------------------
-p = sp.add_parser(
+p = rsa.add_parser(
     'create-private',
     help='Create a private key')
 p.add_argument(
@@ -81,7 +133,7 @@ def create_private(args):
 # --------------------------------------------------------
 # extract-public
 # --------------------------------------------------------
-p = sp.add_parser(
+p = rsa.add_parser(
     'extract-public',
     help='Extract a public key from a private key')
 p.add_argument(
@@ -101,7 +153,7 @@ def extract_public(args):
 # --------------------------------------------------------
 # self-signed-cert
 # --------------------------------------------------------
-p = sp.add_parser(
+p = rsa.add_parser(
     'self-signed-cert',
     help='Create a self-signed certificate')
 p.add_argument(
@@ -124,7 +176,7 @@ def self_signed_cert(args):
 # --------------------------------------------------------
 # create-csr
 # --------------------------------------------------------
-p = sp.add_parser(
+p = rsa.add_parser(
     'create-csr',
     help='Create a Certificate Signing Request (CSR)')
 p.add_argument(
@@ -162,7 +214,7 @@ def create_csr(args):
 # --------------------------------------------------------
 # sign-csr
 # --------------------------------------------------------
-p = sp.add_parser(
+p = rsa.add_parser(
     'sign-csr',
     help='Sign a Certificate Signing Request to make a certificate')
 p.add_argument(
@@ -189,6 +241,17 @@ def sign_csr(args):
     out('wrote', args.cert)
 
 
-def main(args=None):
+@contextlib.contextmanager
+def redirect(stdin=None, stdout=None, stderr=None):
+    former = sys.stdin, sys.stdout, sys.stderr
+    sys.stdin = stdin or sys.stdin
+    sys.stdout = stdout or sys.stdout
+    sys.stderr = stderr or sys.stderr
+    yield
+    sys.stdin, sys.stdout, sys.stderr = former
+
+
+def main(args=None, stdin=None, stdout=None, stderr=None):
     parsed = ap.parse_args(args)
-    parsed.func(parsed)
+    with redirect(stdin=stdin, stdout=stdout, stderr=stderr):
+        parsed.func(parsed)
