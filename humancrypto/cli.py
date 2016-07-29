@@ -87,10 +87,32 @@ p.add_argument(
 @do(p)
 def verify(args):
     from humancrypto.current import verify_password
-    pw = sys.stdin.read()
+    pw = sys.stdin.read().encode()
+    if isinstance(args.stored, six.binary_type):
+        args.stored = args.stored.decode()
     if verify_password(args.stored, pw):
-        out('match')
+        out('ok')
 
+
+# --------------------------------------------------------
+# 44 B.C.
+# --------------------------------------------------------
+p = pw.add_parser(
+    'store44BC',
+    help='DEPRECATED.'
+         '  Store a password using 44 B.C. best practices.'
+         '  Password is read from stdin.')
+
+
+@do(p)
+def store44BC(args):
+    from humancrypto.y44bc import store_password
+    pw = sys.stdin.read().encode()
+    out(store_password(pw))
+
+# --------------------------------------------------------
+# 2016
+# --------------------------------------------------------
 p = pw.add_parser(
     'store2016',
     help='Store a password using 2016 best practices.'
@@ -100,7 +122,7 @@ p = pw.add_parser(
 @do(p)
 def store2016(args):
     from humancrypto.y2016 import store_password
-    pw = sys.stdin.read()
+    pw = sys.stdin.read().encode()
     out(store_password(pw))
 
 # ========================================================

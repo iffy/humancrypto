@@ -7,4 +7,5 @@ humancrypto/current.py
 humancrypto/error.py
 humancrypto/pki.py
 humancrypto/y2016.py
+humancrypto/y44bc.py
 scripts/humancrypto

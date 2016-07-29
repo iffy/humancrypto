@@ -1,5 +1,5 @@
 
-from humancrypto.y2016 import store_password, verify_password
+from humancrypto.y44bc import store_password, verify_password
 
 from tests.util import PasswordHashingMixin
 
