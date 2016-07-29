@@ -73,7 +73,8 @@ Check a password hash (for any year):
 ```python
 >>> from humancrypto.current import verify_password
 >>> verify_password(stored, b'WRONG PASSWORD')
-False
+...
+humancrypto.error.VerifyMismatchError
 >>> verify_password(stored, b'this is my password')
 True
 ```
