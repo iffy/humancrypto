@@ -13,6 +13,7 @@ import six
 def warn():
     warnings.warn('Using cryptography from 44 B.C. is considered unsafe.')
 
+
 def rot128(s):
     """
     Rotate all bytes by 128
