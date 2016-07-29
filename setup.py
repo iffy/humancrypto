@@ -11,6 +11,9 @@ setup(
     name='humancrypto',
     version=version,
     description='Cryptography for Humans',
+    author='Matt Haggard',
+    author_email='haggardii@gmail.com',
+    url='https://github.com/iffy/humancrypto',
     packages=[
         'humancrypto',
     ],
