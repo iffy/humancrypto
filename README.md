@@ -2,9 +2,9 @@
 
 [![Build Status](https://travis-ci.org/iffy/humancrypto.svg?branch=master)](https://travis-ci.org/iffy/humancrypto)
 
-**DON'T USE THIS IN PRODUCTION!  It's just an idea right now.**
-
 # tl;dr
+
+**DON'T USE THIS IN PRODUCTION!  It's just an idea right now.**
 
 Stay up to date with cryptography best practices:
 
