@@ -2,14 +2,60 @@
 
 [![Build Status](https://travis-ci.org/iffy/humancrypto.svg?branch=master)](https://travis-ci.org/iffy/humancrypto)
 
+# tl;dr
+
 **DON'T USE THIS IN PRODUCTION!  It's just an idea right now.**
+
+Stay up to date with cryptography best practices:
+
+- If it's 2016, use the `y2016` module.
+- If it's 44 B.C., use the `y44bc` module.
+
+
+## Introduction
+
+Do you want to do something cryptographic, but have a hard time keeping up with changing best practices?  This cryptography library makes it easy to know if you're following current best practices.
+
+For instance, in 44 B.C. it was okay to use [ROT13](https://en.wikipedia.org/wiki/ROT13) to store your passwords.  So the `y44bc` module is provided for doing ROT128 (a just-as-secure variation of ROT13):
+
+```python
+>>> from humancrypto.y44bc import store_password
+>>> stored_44bc = store_password(b'password')
+...
+```
+
+Verify that a given password matches the stored version with the `current` module:
+
+```python
+>>> from humancrypto.current import verify_password
+>>> verify_password(stored_44bc, b'password')
+True
+```
+
+But it's not 44 B.C., it's 2016.  We should store passwords using 2016 methods:
+
+```python
+>>> from humancrypto.y2016 import store_password
+>>> stored_2016 = store_password(b'password')
+...
+```
+
+And when we encounter passwords stored in the old way, we should upgrade them:
+
+```python
+>>> from humancrypto.current import verify_and_upgrade_password
+>>> new_stored_2016 = verify_and_upgrade_password(stored_44bc, b'password')
+```
+
+
+## Components
+
 
 There are two components to this library:
 
 1. [pyca's cryptography](https://pypi.python.org/pypi/cryptography) + sane defaults for RSA.
-2. Year-defined best-practice cryptography.
 
-I made this in an attempt to have an even easier and more portable interface than [easy-rsa](https://github.com/OpenVPN/easy-rsa) and because it's tricky to know what the current best practices are (since they change over time).
+2. Year-defined best-practice cryptography.
 
 
 

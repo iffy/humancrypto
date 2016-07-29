@@ -54,3 +54,27 @@ class PasswordHashingMixin(object):
 
         with pytest.raises(TypeError):
             current.verify_password(stored, six.u('something'))
+
+    def test_upgrade(self):
+        """
+        Password hashes can be upgraded if they're not the latest.
+        """
+        password = b'something'
+        stored = self.store_password(password)
+        year, _ = stored.split(':', 1)
+        new_stored = current.verify_and_upgrade_password(stored, b'something')
+        if year == current.LATEST_YEAR:
+            assert new_stored is None, "Already latest"
+        else:
+            assert isinstance(new_stored, six.text_type) is True
+            year, _ = new_stored.split(':', 1)
+            assert year == current.LATEST_YEAR
+
+    def test_upgrade_wrong_password(self):
+        """
+        Don't upgrade if they're old.
+        """
+        password = b'something'
+        stored = self.store_password(password)
+        with pytest.raises(VerifyMismatchError):
+            current.verify_and_upgrade_password(stored, b'wrong')
