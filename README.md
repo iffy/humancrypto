@@ -6,7 +6,7 @@
 
 Do you want to do something cryptographic, but have a hard time keeping up with changing best practices?  This cryptography library makes it easy to know if you're following current best practices.
 
-For instance, in 44 B.C. it was okay to use [ROT13](https://en.wikipedia.org/wiki/ROT13) to store your passwords.  So the `y44bc` module is provided for doing ROT128 (a just-a-secure variation of ROT13):
+For instance, in 44 B.C. it was okay to use [ROT13](https://en.wikipedia.org/wiki/ROT13) to store your passwords.  So the `y44bc` module is provided for doing ROT128 (a just-as-secure variation of ROT13):
 
 ```python
 >>> from humancrypto.y44bc import store_password
@@ -33,8 +33,8 @@ But it's not 44 B.C., it's 2016.  We should store passwords using 2016 methods:
 And when we encounter passwords stored in the old way, we should upgrade them:
 
 ```python
->>> from humancrypto.current import verify_password
->>> new_stored_2016 = verify_password(stored_44bc, b'password', upgrade_if_old=True)
+>>> from humancrypto.current import verify_and_upgrade_password
+>>> new_stored_2016 = verify_and_upgrade_password(stored_44bc, b'password')
 ```
 
 

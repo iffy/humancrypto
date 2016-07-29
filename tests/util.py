@@ -62,8 +62,7 @@ class PasswordHashingMixin(object):
         password = b'something'
         stored = self.store_password(password)
         year, _ = stored.split(':', 1)
-        new_stored = current.verify_password(
-            stored, b'something', upgrade_if_old=True)
+        new_stored = current.verify_and_upgrade_password(stored, b'something')
         if year == current.LATEST_YEAR:
             assert new_stored is None, "Already latest"
         else:
@@ -78,5 +77,4 @@ class PasswordHashingMixin(object):
         password = b'something'
         stored = self.store_password(password)
         with pytest.raises(VerifyMismatchError):
-            current.verify_password(
-                stored, b'wrong', upgrade_if_old=True)
+            current.verify_and_upgrade_password(stored, b'wrong')

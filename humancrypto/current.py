@@ -73,3 +73,7 @@ def verify_password(stored, password, upgrade_if_old=False):
             return None
     else:
         return True
+
+
+def verify_and_upgrade_password(stored, password):
+    return verify_password(stored, password, upgrade_if_old=True)
