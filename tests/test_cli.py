@@ -11,36 +11,40 @@ from humancrypto.error import VerifyMismatchError
 
 class Test_pw(object):
 
-    def do(self, args, stdin=None, return_stdout=False):
-        stdout = None
-        if return_stdout:
-            stdout = six.StringIO()
+    def do(self, args, stdin=None):
+        stdout = six.StringIO()
+        stderr = six.StringIO()
         if stdin:
             stdin = six.StringIO(stdin)
-        main(['pw'] + args, stdin=stdin, stdout=stdout)
-        if return_stdout:
-            return stdout.getvalue()
+        main(['pw'] + args, stdin=stdin, stdout=stdout, stderr=stderr)
+        return stdout.getvalue(), stderr.getvalue()
 
-    def test_store(self):
-        stored = self.do(
+    def test_store2016(self):
+        stored, _ = self.do(
             ['store2016'],
-            stdin='password',
-            return_stdout=True)
-        result = self.do(
+            stdin='password')
+        result, _ = self.do(
             ['verify', stored],
-            stdin='password',
-            return_stdout=True)
-        assert result == 'match\n'
+            stdin='password')
+        assert result == 'ok\n'
 
-    def test_wrong_password(self):
-        stored = self.do(
+    def test_store2016_wrong_password(self):
+        stored, _ = self.do(
             ['store2016'],
-            stdin='password',
-            return_stdout=True)
+            stdin='password')
         with pytest.raises(VerifyMismatchError):
             self.do(
                 ['verify', stored],
                 stdin='wrong')
+
+    def test_store44BC(self):
+        stored, _ = self.do(
+            ['store44BC'],
+            stdin='password')
+        result, _ = self.do(
+            ['verify', stored],
+            stdin='password')
+        assert result == 'ok\n'
 
 
 class Test_rsa(object):
