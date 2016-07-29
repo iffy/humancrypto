@@ -12,6 +12,18 @@ Stay up to date with cryptography best practices:
 - If it's 44 B.C., use the `y44bc` module.
 
 
+## Installation
+
+Stable:
+
+    pip install humancrypto
+
+Latest:
+
+    pip install git+https://github.com/iffy/humancrypto.git
+
+
+
 ## Introduction
 
 Do you want to do something cryptographic, but have a hard time keeping up with changing best practices?  This cryptography library makes it easy to know if you're following current best practices.
@@ -57,12 +69,6 @@ There are two components to this library:
 
 2. Year-defined best-practice cryptography.
 
-
-
-
-## Installation
-
-    pip install git+https://github.com/iffy/humancrypto.git
 
 
 ## Command line usage
