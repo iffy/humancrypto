@@ -81,11 +81,12 @@ There are two components to this library:
 
 Store a password using 2016 best practices:
 
-    echo 'mypassword' | humancrypto pw store2016 > stored.out
+    $ echo 'mypassword' | humancrypto pw 2016 store > stored.out
 
 Verify a password (for any year):
 
-    echo 'mypassword' | humancrypto pw verify "$(cat stored.out)"
+    $ echo 'mypassword' | humancrypto pw 2016 verify "$(cat stored.out)"
+    ok
 
 
 ### RSA Keys
@@ -139,15 +140,12 @@ Typical usage for verifying might look like this:
     from humancrypto.error import PasswordMatchesWrongYear
     from humancrypto.error import VerifyMismatchError
 
-    password = get_password_from_user()
-    stored = get_stored_password_for_user()
-
     def verify_password(stored, password):
         try:
             y2016.verify_password(stored, password)
         except PasswordMatchesWrongYear:
             stored = y2016.store_password(password)
-            store_password_for_user(stored)
+            # ... store the password for the user
         except VerifyMismatchError(Error):
             raise Exception('Bad password')
 
