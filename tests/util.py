@@ -1,21 +1,25 @@
 import pytest
 import six
 
-from humancrypto import current
-from humancrypto.error import VerifyMismatchError
+from humancrypto import pwutil
+from humancrypto.error import VerifyMismatchError, PasswordMatchesWrongYear
 
 
 class PasswordHashingMixin(object):
 
-    def store_password(self, *args, **kwargs):
+    def get_module(self):
         raise NotImplementedError(
-            "You must implement store_password"
-            " to use the PasswordHashingMixin")
+            "You must implement get_module"
+            " to use the PasswordHasingMixin")
+
+    def store_password(self, *args, **kwargs):
+        return self.get_module().store_password(*args, **kwargs)
 
     def verify_password(self, *args, **kwargs):
-        raise NotImplementedError(
-            "You must implement verify_password"
-            " to use the PasswordHashingMixin")
+        return self.get_module().verify_password(*args, **kwargs)
+
+    def test_module_has_YEAR(self):
+        assert self.get_module().YEAR is not None
 
     def test_functional(self):
         """
@@ -33,10 +37,16 @@ class PasswordHashingMixin(object):
         You can store in 2016 format and verify with the
         current verifier.
         """
+        current = list(pwutil.list_modules())[0]
+
         password = b'something'
         stored = self.store_password(password)
         assert isinstance(stored, six.text_type) is True
-        assert current.verify_password(stored, b'something') is True
+        if current == self.get_module():
+            current.verify_password(stored, b'something')
+        else:
+            with pytest.raises(PasswordMatchesWrongYear):
+                current.verify_password(stored, b'something')
         with pytest.raises(VerifyMismatchError):
             current.verify_password(stored, b'wrong')
 
@@ -50,31 +60,29 @@ class PasswordHashingMixin(object):
         stored = self.store_password(b'hey')
         assert isinstance(stored, six.text_type) is True
         with pytest.raises(TypeError):
-            current.verify_password(b'binary_is_bad_here', b'something')
+            self.verify_password(b'binary_is_bad_here', b'something')
 
         with pytest.raises(TypeError):
-            current.verify_password(stored, six.u('something'))
+            self.verify_password(stored, six.u('something'))
 
-    def test_upgrade(self):
+    def test_PasswordMatchesWrongYear(self):
         """
-        Password hashes can be upgraded if they're not the latest.
+        Password hashes can be changed to a new year's standard when verified.
         """
+        modules = list(pwutil.list_modules())
+        assert len(modules) > 0
         password = b'something'
-        stored = self.store_password(password)
-        year, _ = stored.split(':', 1)
-        new_stored = current.verify_and_upgrade_password(stored, b'something')
-        if year == current.LATEST_YEAR:
-            assert new_stored is None, "Already latest"
-        else:
-            assert isinstance(new_stored, six.text_type) is True
-            year, _ = new_stored.split(':', 1)
-            assert year == current.LATEST_YEAR
+        for module in modules:
+            # store using a different module
+            stored = module.store_password(password)
+            year = pwutil.getYear(stored)
 
-    def test_upgrade_wrong_password(self):
-        """
-        Don't upgrade if they're old.
-        """
-        password = b'something'
-        stored = self.store_password(password)
-        with pytest.raises(VerifyMismatchError):
-            current.verify_and_upgrade_password(stored, b'wrong')
+            if year == self.get_module().YEAR:
+                # same version
+                self.verify_password(stored, password)
+            else:
+                # different version
+                with pytest.raises(PasswordMatchesWrongYear):
+                    self.verify_password(stored, password)
+                with pytest.raises(VerifyMismatchError):
+                    self.verify_password(stored, b'wrong password')

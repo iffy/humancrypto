@@ -5,7 +5,7 @@ import six
 import sys
 import contextlib
 from humancrypto import PrivateKey, Certificate, CSR
-from humancrypto import pki
+from humancrypto import pki, pwutil
 
 
 def do(parser):
@@ -75,55 +75,63 @@ pw = pw_parser.add_subparsers(
     title='subcommands',
     dest='subcommand')
 
-p = pw.add_parser(
-    'verify',
-    help='Verify that a password matches a stored password.'
-         '  Password is read from stdin.')
-p.add_argument(
-    'stored',
-    help='Stored password.')
+# p = pw.add_parser(
+#     'verify',
+#     help='Verify that a password matches a stored password.'
+#          '  Password is read from stdin.')
+# p.add_argument(
+#     'stored',
+#     help='Stored password.')
 
 
-@do(p)
-def verify(args):
-    from humancrypto.current import verify_password
-    pw = sys.stdin.read().encode()
-    if isinstance(args.stored, six.binary_type):
-        args.stored = args.stored.decode()
-    if verify_password(args.stored, pw):
-        out('ok')
+# @do(p)
+# def verify(args):
+#     from humancrypto.current import verify_password
+#     pw = sys.stdin.read().encode()
+#     if isinstance(args.stored, six.binary_type):
+#         args.stored = args.stored.decode()
+#     if verify_password(args.stored, pw):
+#         out('ok')
 
 
-# --------------------------------------------------------
-# 44 B.C.
-# --------------------------------------------------------
-p = pw.add_parser(
-    'store44BC',
-    help='DEPRECATED.'
-         '  Store a password using 44 B.C. best practices.'
-         '  Password is read from stdin.')
+def add_pw_year(main, name, key, deprecated=False):
+    helptext = (
+        'Password storage/verification using 44 B.C. best practices.'
+        '  Password is read from stdin.')
+    if deprecated:
+        helptext = 'DEPRECATED. ' + helptext
+    p = main.add_parser(name, help=helptext)
+
+    subs = p.add_subparsers(
+        title='subsubcommands',
+        dest='subsubcommand')
+
+    p = subs.add_parser('store')
+
+    @do(p)
+    def store_password(args):
+        module = pwutil.get_module(key)
+        pw = sys.stdin.read().encode()
+        out(module.store_password(pw))
+
+    p = subs.add_parser('verify')
+    p.add_argument(
+        'stored',
+        help='Stored password.')
+
+    @do(p)
+    def verify_password(args):
+        module = pwutil.get_module(key)
+        pw = sys.stdin.read().encode()
+        if isinstance(args.stored, six.binary_type):
+            args.stored = args.stored.decode()
+        if module.verify_password(args.stored, pw):
+            out('ok')
 
 
-@do(p)
-def store44BC(args):
-    from humancrypto.y44bc import store_password
-    pw = sys.stdin.read().encode()
-    out(store_password(pw))
+add_pw_year(pw, '44bc', '44bc', deprecated=True)
+add_pw_year(pw, '2016', '2016')
 
-# --------------------------------------------------------
-# 2016
-# --------------------------------------------------------
-p = pw.add_parser(
-    'store2016',
-    help='Store a password using 2016 best practices.'
-         '  Password is read from stdin.')
-
-
-@do(p)
-def store2016(args):
-    from humancrypto.y2016 import store_password
-    pw = sys.stdin.read().encode()
-    out(store_password(pw))
 
 # ========================================================
 # RSA

@@ -1,17 +1,22 @@
 """
 Password hashing best practices for 44 B.C.
 """
+# We may do cryptography like it's 44 B.C.,
+# but we print like it's THE FUTURE!
 from __future__ import print_function
 
-from humancrypto import error
+from humancrypto import pwutil
 
 import warnings
 import binascii
 import six
 
 
+YEAR = '44bc'
+
+
 def warn():
-    warnings.warn('Using cryptography from 44 B.C. is considered unsafe.')
+    warnings.warn('Using cryptography circa 44 B.C. is considered unsafe.')
 
 
 def rot128(s):
@@ -24,30 +29,19 @@ def rot128(s):
         return bytes((c+128) % 256 for c in s)
 
 
-def store_password(password):
-    warn()
+class _PasswordHasher(pwutil.PasswordHasher):
 
-    if not isinstance(password, six.binary_type):
-        raise TypeError(
-            'Password must be binary not {0}'.format(type(password)))
+    YEAR = YEAR
 
-    h = binascii.hexlify(rot128(password)).decode('utf-8')
-    return six.u('44bc:{0}').format(h)
+    def _store_password(self, password):
+        warn()
+        return binascii.hexlify(rot128(password)).decode('utf-8')
+
+    def _verify_password(self, stored, password):
+        warn()
+        return rot128(binascii.unhexlify(stored)) == password
 
 
-def verify_password(stored, password):
-    warn()
-
-    if not isinstance(password, six.binary_type):
-        raise TypeError(
-            'Password must be binary not {0}'.format(type(password)))
-
-    if not isinstance(stored, six.text_type):
-        raise TypeError(
-            'Stored password must be text not {0}'.format(type(stored)))
-
-    year, h = stored.strip().split(six.u(':'), 1)
-    if rot128(binascii.unhexlify(h)) == password:
-        return True
-    else:
-        raise error.VerifyMismatchError()
+_instance = _PasswordHasher()
+store_password = _instance.store_password
+verify_password = _instance.verify_password

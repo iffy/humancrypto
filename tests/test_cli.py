@@ -21,28 +21,28 @@ class Test_pw(object):
 
     def test_store2016(self):
         stored, _ = self.do(
-            ['store2016'],
+            ['2016', 'store'],
             stdin='password')
         result, _ = self.do(
-            ['verify', stored],
+            ['2016', 'verify', stored],
             stdin='password')
         assert result == 'ok\n'
 
     def test_store2016_wrong_password(self):
         stored, _ = self.do(
-            ['store2016'],
+            ['2016', 'store'],
             stdin='password')
         with pytest.raises(VerifyMismatchError):
             self.do(
-                ['verify', stored],
+                ['2016', 'verify', stored],
                 stdin='wrong')
 
     def test_store44BC(self):
         stored, _ = self.do(
-            ['store44BC'],
+            ['44bc', 'store'],
             stdin='password')
         result, _ = self.do(
-            ['verify', stored],
+            ['44bc', 'verify', stored],
             stdin='password')
         assert result == 'ok\n'
 

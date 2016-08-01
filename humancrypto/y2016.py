@@ -1,33 +1,26 @@
 from argon2 import PasswordHasher, exceptions
-
-import six
-
-from humancrypto import error
+from humancrypto import pwutil
 
 
-def store_password(password):
-    if not isinstance(password, six.binary_type):
-        raise TypeError(
-            'Password must be binary not {0}'.format(type(password)))
-
-    ph = PasswordHasher()
-    h = ph.hash(password)
-    return six.u('2016:{0}').format(h)
+YEAR = '2016'
 
 
-def verify_password(stored, password):
-    if not isinstance(password, six.binary_type):
-        raise TypeError(
-            'Password must be binary not {0}'.format(type(password)))
+class _PasswordHasher(pwutil.PasswordHasher):
 
-    if not isinstance(stored, six.text_type):
-        raise TypeError(
-            'Stored password must be text not {0}'.format(type(stored)))
+    YEAR = YEAR
 
-    year, h = stored.strip().split(':', 1)
-    ph = PasswordHasher()
-    try:
-        ph.verify(h, password)
-        return True
-    except (exceptions.VerifyMismatchError, exceptions.VerificationError):
-        raise error.VerifyMismatchError()
+    def _store_password(self, password):
+        return PasswordHasher().hash(password)
+
+    def _verify_password(self, stored, password):
+        ph = PasswordHasher()
+        try:
+            ph.verify(stored, password)
+            return True
+        except (exceptions.VerifyMismatchError, exceptions.VerificationError):
+            return False
+
+
+_instance = _PasswordHasher()
+store_password = _instance.store_password
+verify_password = _instance.verify_password

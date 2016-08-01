@@ -28,36 +28,38 @@ Latest:
 
 Do you want to do something cryptographic, but have a hard time keeping up with changing best practices?  This cryptography library makes it easy to know if you're following current best practices.
 
-For instance, in 44 B.C. it was okay to use [ROT13](https://en.wikipedia.org/wiki/ROT13) to store your passwords.  So the `y44bc` module is provided for doing ROT128 (a just-as-secure variation of ROT13):
+For instance, in 44 B.C. it was okay to use things like [ROT13](https://en.wikipedia.org/wiki/ROT13) to store your passwords.  So the `y44bc` module is provided for that level of password-storage security:
 
-```python
->>> from humancrypto.y44bc import store_password
->>> stored_44bc = store_password(b'password')
-...
-```
+    >>> from humancrypto.y44bc import store_password
+    >>> stored_44bc = store_password(b'password')
 
-Verify that a given password matches the stored version with the `current` module:
+Verify that a given password matches the stored version:
 
-```python
->>> from humancrypto.current import verify_password
->>> verify_password(stored_44bc, b'password')
-True
-```
+    >>> from humancrypto.y44bc import verify_password
+    >>> verify_password(stored_44bc, b'password')
+    True
+    >>> verify_password(stored_44bc, b'WRONG')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "humancrypto/pwutil.py", line 73, in verify_password
+        raise VerifyMismatchError()
+    humancrypto.error.VerifyMismatchError
 
 But it's not 44 B.C., it's 2016.  We should store passwords using 2016 methods:
 
-```python
->>> from humancrypto.y2016 import store_password
->>> stored_2016 = store_password(b'password')
-...
-```
+    >>> from humancrypto.y2016 import store_password
+    >>> stored_2016 = store_password(b'password')
 
-And when we encounter passwords stored in the old way, we should upgrade them:
+And when we encounter 44 B.C. passwords in 2016, we should upgrade them:
 
-```python
->>> from humancrypto.current import verify_and_upgrade_password
->>> new_stored_2016 = verify_and_upgrade_password(stored_44bc, b'password')
-```
+    >>> from humancrypto.error import PasswordMatchesWrongYear
+    >>> from humancrypto.y2016 import verify_password
+    >>> password = b'password'
+    >>> try:
+    ...     verify_password(stored_44bc, password)
+    ... except PasswordMatchesWrongYear:
+    ...     converted_to_2016 = store_password(password)
+    ...
 
 
 ## Components
@@ -79,11 +81,12 @@ There are two components to this library:
 
 Store a password using 2016 best practices:
 
-    echo 'mypassword' | humancrypto pw store2016 > stored.out
+    $ echo 'mypassword' | humancrypto pw 2016 store > stored.out
 
 Verify a password (for any year):
 
-    $ echo 'mypassword' | humancrypto pw verify "$(cat stored.out)"
+    $ echo 'mypassword' | humancrypto pw 2016 verify "$(cat stored.out)"
+    ok
 
 
 ### RSA Keys
@@ -115,69 +118,74 @@ Create a signed certificate for a server key:
 
 Store a password using 2016 best practices:
 
-```python
->>> from humancrypto.y2016 import store_password
->>> stored = store_password(b'this is my password')
-```
+
+    >>> from humancrypto.y2016 import store_password
+    >>> stored = store_password(b'this is my password')
 
 Check a password hash (for any year):
 
-```python
->>> from humancrypto.current import verify_password
->>> verify_password(stored, b'WRONG PASSWORD')
-...
-humancrypto.error.VerifyMismatchError
->>> verify_password(stored, b'this is my password')
-True
-```
+    >>> from humancrypto.y2016 import verify_password
+    >>> verify_password(stored, b'WRONG PASSWORD')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "humancrypto/pwutil.py", line 73, in verify_password
+        raise VerifyMismatchError()
+    humancrypto.error.VerifyMismatchError
+    >>> verify_password(stored, b'this is my password')
+    True
+
+Typical usage for verifying might look like this:
+
+    from humancrypto import y2016
+    from humancrypto.error import PasswordMatchesWrongYear
+    from humancrypto.error import VerifyMismatchError
+
+    def verify_password(stored, password):
+        try:
+            y2016.verify_password(stored, password)
+        except PasswordMatchesWrongYear:
+            stored = y2016.store_password(password)
+            # ... store the password for the user
+        except VerifyMismatchError(Error):
+            raise Exception('Bad password')
 
 ### RSA Keys
 
 Create a private key:
 
-```python
->>> from humancrypto import PrivateKey
->>> key = PrivateKey.create()
->>> key.save('private.key')
-```
+    >>> from humancrypto import PrivateKey
+    >>> key = PrivateKey.create()
+    >>> key.save('private.key')
 
 Load a private key from a file (these are all equivalent).  There are equivalent methods for CSRs, Certs, Public Keys:
 
-```python
->>> key = PrivateKey.load(filename='private.key')
->>> key = PrivateKey.load(open('private.key', 'rb').read())
->>> key = PrivateKey.load(key.dumps())
-```
+    >>> key = PrivateKey.load(filename='private.key')
+    >>> key = PrivateKey.load(open('private.key', 'rb').read())
+    >>> key = PrivateKey.load(key.dump())
 
 Create a self-signed Certificate:
 
-```python
->>> root_cert = key.self_signed_cert({'common_name': u'bob'})
->>> root_cert.subject.attribs['common_name']
-u'bob'
-```
+    >>> root_cert = key.self_signed_cert({'common_name': u'bob'})
+    >>> root_cert.subject.attribs['common_name']
+    u'bob'
 
 Create a server-friendly Certificate Signing Request (CSR):
 
-```python
->>> from humancrypto import CSR
->>> csr = CSR(key, {'common_name': u'bob'}, server=True)
->>> csr = key.signing_request({'common_name': u'bob'}, server=True) # equivalent
->>> csr.attribs['common_name']
-u'bob'
->>> csr.save('ca.csr')
-```
+    >>> from humancrypto import CSR
+    >>> csr = CSR.create(key, {'common_name': u'bob'}, server=True)
+    >>> csr = key.signing_request({'common_name': u'bob'}, server=True) # equivalent
+    >>> csr.attribs['common_name']
+    u'bob'
+    >>> csr.save('ca.csr')
 
 Use `client=True` instead of `server=True` if you want a client.
 
 Sign a CSR:
 
-```python
->>> cert = key.sign_csr(csr, root_cert)
->>> cert.subject.attribs['common_name']
-u'bob'
->>> cert.save('ca.cert')
-```
+    >>> cert = key.sign_csr(csr, root_cert)
+    >>> cert.subject.attribs['common_name']
+    u'bob'
+    >>> cert.save('ca.cert')
 
 
 ## Notes
