@@ -59,6 +59,7 @@ And when we encounter 44 B.C. passwords in 2016, we should upgrade them:
     ...     converted_to_2016 = y2016.store_password(password)
     ...
 
+Using this library, it's obvious from looking at your code how old your crypto is.
 
 ## Components
 
