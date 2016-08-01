@@ -30,15 +30,14 @@ Do you want to do something cryptographic, but have a hard time keeping up with 
 
 For instance, in 44 B.C. it was okay to use things like [ROT13](https://en.wikipedia.org/wiki/ROT13) to store your passwords.  So the `y44bc` module is provided for that level of password-storage security:
 
-    >>> from humancrypto.y44bc import store_password
-    >>> stored_44bc = store_password(b'password')
+    >>> from humancrypto import y44bc
+    >>> stored_44bc = y44bc.store_password(b'password')
 
 Verify that a given password matches the stored version:
 
-    >>> from humancrypto.y44bc import verify_password
-    >>> verify_password(stored_44bc, b'password')
+    >>> y44bc.verify_password(stored_44bc, b'password')
     True
-    >>> verify_password(stored_44bc, b'WRONG')
+    >>> y44bc.verify_password(stored_44bc, b'WRONG')
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
       File "humancrypto/pwutil.py", line 73, in verify_password
@@ -47,18 +46,17 @@ Verify that a given password matches the stored version:
 
 But it's not 44 B.C., it's 2016.  We should store passwords using 2016 methods:
 
-    >>> from humancrypto.y2016 import store_password
-    >>> stored_2016 = store_password(b'password')
+    >>> from humancrypto import y2016
+    >>> stored_2016 = y2016.store_password(b'password')
 
 And when we encounter 44 B.C. passwords in 2016, we should upgrade them:
 
     >>> from humancrypto.error import PasswordMatchesWrongYear
-    >>> from humancrypto.y2016 import verify_password
     >>> password = b'password'
     >>> try:
-    ...     verify_password(stored_44bc, password)
+    ...     y2016.verify_password(stored_44bc, password)
     ... except PasswordMatchesWrongYear:
-    ...     converted_to_2016 = store_password(password)
+    ...     converted_to_2016 = y2016.store_password(password)
     ...
 
 
