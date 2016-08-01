@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='humancrypto',
-    version='0.1.0',
+    version='0.2.0',
     description='Cryptography for Humans',
     author='Matt Haggard',
     author_email='haggardii@gmail.com',
