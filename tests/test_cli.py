@@ -20,13 +20,13 @@ class Test_token(object):
         return stdout.getvalue(), stderr.getvalue()
 
     def test_bytes(self):
-        self.do(['2016', 'token'])
+        self.do(['y2016', 'token'])
 
     def test_hex(self):
-        self.do(['2016', 'token', '--hex'])
+        self.do(['y2016', 'token', '--hex'])
 
     def test_urlsafe(self):
-        self.do(['2016', 'token', '--urlsafe'])
+        self.do(['y2016', 'token', '--urlsafe'])
 
 
 class Test_pw(object):
@@ -41,28 +41,28 @@ class Test_pw(object):
 
     def test_store2016(self):
         stored, _ = self.do(
-            ['2016', 'pw', 'store'],
+            ['y2016', 'pw', 'store'],
             stdin='password')
         result, _ = self.do(
-            ['2016', 'pw', 'verify', stored],
+            ['y2016', 'pw', 'verify', stored],
             stdin='password')
         assert result == 'ok\n'
 
     def test_store2016_wrong_password(self):
         stored, _ = self.do(
-            ['2016', 'pw', 'store'],
+            ['y2016', 'pw', 'store'],
             stdin='password')
         with pytest.raises(VerifyMismatchError):
             self.do(
-                ['2016', 'pw', 'verify', stored],
+                ['y2016', 'pw', 'verify', stored],
                 stdin='wrong')
 
     def test_store44BC(self):
         stored, _ = self.do(
-            ['44bc', 'pw', 'store'],
+            ['y44bc', 'pw', 'store'],
             stdin='password')
         result, _ = self.do(
-            ['44bc', 'pw', 'verify', stored],
+            ['y44bc', 'pw', 'verify', stored],
             stdin='password')
         assert result == 'ok\n'
 

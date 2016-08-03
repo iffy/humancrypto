@@ -106,11 +106,11 @@ Typical usage for verifying might look like this:
 
 Store a password using 2016 best practices:
 
-    $ echo 'mypassword' | humancrypto 2016 pw store > stored.out
+    $ echo 'mypassword' | humancrypto y2016 pw store > stored.out
 
 Verify a password (for any year):
 
-    $ echo 'mypassword' | humancrypto 2016 pw verify "$(cat stored.out)"
+    $ echo 'mypassword' | humancrypto y2016 pw verify "$(cat stored.out)"
     ok
 
 
@@ -129,9 +129,9 @@ Generate a 2016-secure random token:
 
 Generate a 2016-secure random token:
 
-    $ humancrypto 2016 token > token.txt
-    $ humancrypto 2016 token --urlsafe > urlsafe_token.txt 
-    $ humancrypto 2016 token --hex > hex_token.txt
+    $ humancrypto y2016 token > token.txt
+    $ humancrypto y2016 token --urlsafe > urlsafe_token.txt 
+    $ humancrypto y2016 token --hex > hex_token.txt
 
 
 # RSA

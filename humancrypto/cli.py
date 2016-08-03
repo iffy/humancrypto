@@ -157,8 +157,8 @@ def add_year(parser, name, key, deprecated=False):
         out(ret)
 
 
-add_year(sp, '2016', '2016')
-add_year(sp, '44bc', '44bc', deprecated=True)
+add_year(sp, 'y2016', '2016')
+add_year(sp, 'y44bc', '44bc', deprecated=True)
 
 
 # ========================================================
