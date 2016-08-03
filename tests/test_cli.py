@@ -1,12 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-import pytest
-
 import six
 
 from humancrypto.cli import main
 from humancrypto import PrivateKey, PublicKey, Certificate, CSR
-from humancrypto.error import VerifyMismatchError
 
 
 class Test_token(object):
@@ -52,10 +49,25 @@ class Test_pw(object):
         stored, _ = self.do(
             ['y2016', 'pw', 'store'],
             stdin='password')
-        with pytest.raises(VerifyMismatchError):
+        try:
             self.do(
                 ['y2016', 'pw', 'verify', stored],
                 stdin='wrong')
+            assert False, "Should have raised SystemExit"
+        except SystemExit as e:
+            assert e.code == 1, "Should exit with 1 cause wrong password"
+
+    def test_store44bc_old(self):
+        stored, _ = self.do(
+            ['y44bc', 'pw', 'store'],
+            stdin='password')
+        try:
+            self.do(
+                ['y2016', 'pw', 'verify', stored],
+                stdin='password')
+            assert False, "Should have raised SystemExit"
+        except SystemExit as e:
+            assert e.code == 2, "Should exit with 2 cause wrong year"
 
     def test_store44BC(self):
         stored, _ = self.do(

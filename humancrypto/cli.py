@@ -6,6 +6,7 @@ import sys
 import contextlib
 from humancrypto import PrivateKey, Certificate, CSR
 from humancrypto import pki, yearutil
+from humancrypto.error import VerifyMismatchError, PasswordMatchesWrongYear
 
 
 def do(parser):
@@ -101,9 +102,14 @@ def add_year(parser, name, key, deprecated=False):
 
     p = pw_subs.add_parser(
             'verify',
+            formatter_class=argparse.RawDescriptionHelpFormatter,
             help='Verify that a password matches a stored hash.',
             description='Read a password from stdin'
-                 ' and compare with the given stored password.')
+                 ' and compare with the given stored password.'
+                 ' Will exit with one of the following codes:\n'
+                 '  0 = OK - password matches\n'
+                 '  1 = FAIL - password does NOT match\n'
+                 "  2 = OK-ish - password matches, but for the wrong year\n")
     p.add_argument(
         'stored',
         help='Stored password.')
@@ -114,8 +120,15 @@ def add_year(parser, name, key, deprecated=False):
         pw = sys.stdin.read().encode()
         if isinstance(args.stored, six.binary_type):
             args.stored = args.stored.decode()
-        if module.verify_password(args.stored, pw):
+        try:
+            module.verify_password(args.stored, pw)
             out('ok')
+        except PasswordMatchesWrongYear:
+            out('ok-ish: password matches but for different year')
+            sys.exit(2)
+        except VerifyMismatchError:
+            out('incorrect')
+            sys.exit(1)
 
     # ---------------------------
     # Tokens

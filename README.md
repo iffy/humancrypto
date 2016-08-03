@@ -113,6 +113,8 @@ Verify a password (for any year):
     $ echo 'mypassword' | humancrypto y2016 pw verify "$(cat stored.out)"
     ok
 
+See `humancrypto y2016 pw verify --help` for additional information and possible return codes.
+
 
 # Random tokens
 
