@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/iffy/humancrypto.svg?branch=master)](https://travis-ci.org/iffy/humancrypto)
 
-# tl;dr
+## tl;dr
 
 **DON'T USE THIS IN PRODUCTION!  It's just an idea right now.**
 
@@ -23,8 +23,7 @@ Latest:
     pip install git+https://github.com/iffy/humancrypto.git
 
 
-
-## Introduction
+## Motivation
 
 Do you want to do something cryptographic, but have a hard time keeping up with changing best practices?  This cryptography library makes it easy to know if you're following current best practices.
 
@@ -61,62 +60,12 @@ And when we encounter 44 B.C. passwords in 2016, we should upgrade them:
 
 Using this library, it's obvious from looking at your code how old your crypto is.
 
-## Components
 
+# Password Hashing
 
-There are two components to this library:
-
-1. [pyca's cryptography](https://pypi.python.org/pypi/cryptography) + sane defaults for RSA.
-
-2. Year-defined best-practice cryptography.
-
-
-
-## Command line usage
-
-### Password Hashing/Storage
-
-*See below for library usage, since command line usage is mostly for testing.*
+## Library
 
 Store a password using 2016 best practices:
-
-    $ echo 'mypassword' | humancrypto pw 2016 store > stored.out
-
-Verify a password (for any year):
-
-    $ echo 'mypassword' | humancrypto pw 2016 verify "$(cat stored.out)"
-    ok
-
-
-### RSA Keys
-
-Create a private key:
-
-    humancrypto rsa create-private ca.key
-
-Extract a public key:
-
-    humancrypto rsa extract-public ca.key ca.pub
-
-Create a self-signed CA certificate:
-
-    humancrypto rsa self-signed-cert ca.key ca.crt --common-name jim
-
-Create a signed certificate for a server key:
-
-    humancrypto rsa create-private server.key
-    humancrypto rsa create-csr server.key server.csr --common-name bob --server
-    humancrypto rsa sign-csr ca.key ca.crt server.csr server.crt
-
-(And use `--client` for a client key).
-
-
-## Library usage
-
-### Password Hashing/Storage
-
-Store a password using 2016 best practices:
-
 
     >>> from humancrypto.y2016 import store_password
     >>> stored = store_password(b'this is my password')
@@ -148,7 +97,67 @@ Typical usage for verifying might look like this:
         except VerifyMismatchError(Error):
             raise Exception('Bad password')
 
-### RSA Keys
+## Command line
+
+Store a password using 2016 best practices:
+
+    $ echo 'mypassword' | humancrypto 2016 pw store > stored.out
+
+Verify a password (for any year):
+
+    $ echo 'mypassword' | humancrypto 2016 pw verify "$(cat stored.out)"
+    ok
+
+
+# Random tokens
+
+## Library
+
+Generate a 2016-secure random token:
+
+    >>> from humancrypto import y2016
+    >>> token = y2016.random_bytes()
+    >>> web_token = y2016.random_urlsafe_token()
+    >>> hex_token = y2016.random_hex_token()
+
+## Command line
+
+Generate a 2016-secure random token:
+
+    $ humancrypto 2016 token > token.txt
+    $ humancrypto 2016 token --urlsafe > urlsafe_token.txt 
+    $ humancrypto 2016 token --hex > hex_token.txt
+
+
+# RSA
+
+The RSA part of the code is essentially [pyca's cryptography](https://pypi.python.org/pypi/cryptography) + sane defaults.
+By default, 2048-bit RSA keys are used.
+
+## Command line
+
+Create a private key:
+
+    humancrypto rsa create-private ca.key
+
+Extract a public key:
+
+    humancrypto rsa extract-public ca.key ca.pub
+
+Create a self-signed CA certificate:
+
+    humancrypto rsa self-signed-cert ca.key ca.crt --common-name jim
+
+Create a signed certificate for a server key:
+
+    humancrypto rsa create-private server.key
+    humancrypto rsa create-csr server.key server.csr --common-name bob --server
+    humancrypto rsa sign-csr ca.key ca.crt server.csr server.crt
+
+(And use `--client` for a client key).
+
+
+## Library
 
 Create a private key:
 
@@ -186,7 +195,3 @@ Sign a CSR:
     u'bob'
     >>> cert.save('ca.cert')
 
-
-## Notes
-
-By default, 2048-bit RSA keys are used.

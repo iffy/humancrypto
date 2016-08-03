@@ -1,7 +1,7 @@
 import pytest
 import six
 
-from humancrypto import pwutil
+from humancrypto import yearutil, pwutil
 from humancrypto.error import VerifyMismatchError, PasswordMatchesWrongYear
 
 
@@ -37,7 +37,7 @@ class PasswordHashingMixin(object):
         You can store in 2016 format and verify with the
         current verifier.
         """
-        current = list(pwutil.list_modules())[0]
+        current = list(yearutil.list_modules())[0]
 
         password = b'something'
         stored = self.store_password(password)
@@ -69,7 +69,7 @@ class PasswordHashingMixin(object):
         """
         Password hashes can be changed to a new year's standard when verified.
         """
-        modules = list(pwutil.list_modules())
+        modules = list(yearutil.list_modules())
         assert len(modules) > 0
         password = b'something'
         for module in modules:
@@ -86,3 +86,25 @@ class PasswordHashingMixin(object):
                     self.verify_password(stored, password)
                 with pytest.raises(VerifyMismatchError):
                     self.verify_password(stored, b'wrong password')
+
+
+class RandomTokenMixin(object):
+
+    def get_module(self):
+        raise NotImplementedError(
+            "You must implement get_module"
+            " to use the RandomTokenMixin")
+
+    def test_bytes(self):
+        token1 = self.get_module().random_bytes()
+        token2 = self.get_module().random_bytes()
+        assert token1 != token2
+        assert isinstance(token1, six.binary_type)
+
+    def test_hex(self):
+        token = self.get_module().random_hex_token()
+        assert isinstance(token, six.text_type)
+
+    def test_urlsafe(self):
+        token = self.get_module().random_urlsafe_token()
+        assert isinstance(token, six.text_type)

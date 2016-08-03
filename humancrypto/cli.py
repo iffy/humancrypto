@@ -5,7 +5,7 @@ import six
 import sys
 import contextlib
 from humancrypto import PrivateKey, Certificate, CSR
-from humancrypto import pki, pwutil
+from humancrypto import pki, yearutil
 
 
 def do(parser):
@@ -64,73 +64,94 @@ ap = argparse.ArgumentParser()
 
 sp = ap.add_subparsers(title='subcommands', dest='command')
 
+
 # ========================================================
-# Passwords
+# Year-based stuff
 # ========================================================
-pw_parser = sp.add_parser(
-    'pw',
-    help='Password storage/verification')
-
-pw = pw_parser.add_subparsers(
-    title='subcommands',
-    dest='subcommand')
-
-# p = pw.add_parser(
-#     'verify',
-#     help='Verify that a password matches a stored password.'
-#          '  Password is read from stdin.')
-# p.add_argument(
-#     'stored',
-#     help='Stored password.')
-
-
-# @do(p)
-# def verify(args):
-#     from humancrypto.current import verify_password
-#     pw = sys.stdin.read().encode()
-#     if isinstance(args.stored, six.binary_type):
-#         args.stored = args.stored.decode()
-#     if verify_password(args.stored, pw):
-#         out('ok')
-
-
-def add_pw_year(main, name, key, deprecated=False):
-    helptext = (
-        'Password storage/verification using 44 B.C. best practices.'
-        '  Password is read from stdin.')
+def add_year(parser, name, key, deprecated=False):
+    helptext = 'Crypto for year {name}'.format(**locals())
     if deprecated:
         helptext = 'DEPRECATED. ' + helptext
-    p = main.add_parser(name, help=helptext)
 
-    subs = p.add_subparsers(
-        title='subsubcommands',
+    year_parser = parser.add_parser(name, help=helptext)
+    year_sp = year_parser.add_subparsers(title='actions', dest='action')
+
+    # ---------------------------
+    # Passwords
+    # ---------------------------
+    pw = year_sp.add_parser(
+        'pw',
+        help='Password storage/verification')
+
+    pw_subs = pw.add_subparsers(
+        title='action',
         dest='subsubcommand')
 
-    p = subs.add_parser('store')
+    p = pw_subs.add_parser(
+        'store',
+        help='Hash a password for later verification.',
+        description='Read a password'
+             ' from stdin and write a hash of the password to stdout.')
 
     @do(p)
     def store_password(args):
-        module = pwutil.get_module(key)
+        module = yearutil.get_module(key)
         pw = sys.stdin.read().encode()
         out(module.store_password(pw))
 
-    p = subs.add_parser('verify')
+    p = pw_subs.add_parser(
+            'verify',
+            help='Verify that a password matches a stored hash.',
+            description='Read a password from stdin'
+                 ' and compare with the given stored password.')
     p.add_argument(
         'stored',
         help='Stored password.')
 
     @do(p)
     def verify_password(args):
-        module = pwutil.get_module(key)
+        module = yearutil.get_module(key)
         pw = sys.stdin.read().encode()
         if isinstance(args.stored, six.binary_type):
             args.stored = args.stored.decode()
         if module.verify_password(args.stored, pw):
             out('ok')
 
+    # ---------------------------
+    # Tokens
+    # ---------------------------
+    token = year_sp.add_parser(
+        'token',
+        description='Writes a secure random token to stdout.'
+                    '  By default, output is binary.',
+        help='Generate a secure random token')
 
-add_pw_year(pw, '44bc', '44bc', deprecated=True)
-add_pw_year(pw, '2016', '2016')
+    token.add_argument(
+        '-H',
+        '--hex',
+        action='store_true',
+        help='Output in hexadecimal format')
+    token.add_argument(
+        '-U',
+        '--urlsafe',
+        action='store_true',
+        help='Output in a URL safe format')
+
+    @do(token)
+    def make_token(args):
+        module = yearutil.get_module(key)
+        ret = None
+        if args.hex:
+            ret = module.random_hex_token()
+        elif args.urlsafe:
+            ret = module.random_urlsafe_token()
+        else:
+            ret = module.random_bytes()
+        out(ret)
+
+
+add_year(sp, '2016', '2016')
+add_year(sp, '44bc', '44bc', deprecated=True)
 
 
 # ========================================================
