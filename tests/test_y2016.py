@@ -1,4 +1,3 @@
-
 from humancrypto import y2016
 
 from tests.util import PasswordHashingMixin, RandomTokenMixin

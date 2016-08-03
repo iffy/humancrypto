@@ -12,7 +12,7 @@ import six
 
 
 YEAR = '44bc'
-DEFAULT_ENTROPY = 8
+MIN_ENTROPY = 8
 warnold = yearutil.for_year(
     -44,
     'Using cryptography circa 44 B.C. is considered unsafe.')
@@ -45,7 +45,8 @@ _instance = _PasswordHasher()
 store_password = _instance.store_password
 verify_password = _instance.verify_password
 
-_random_instance = randomutil.TokenMaker(default_entropy=DEFAULT_ENTROPY)
+_random_instance = randomutil.TokenMaker(min_entropy=MIN_ENTROPY)
 random_bytes = warnold(_random_instance.random_bytes)
+random_token = warnold(_random_instance.random_token)
 random_hex_token = warnold(_random_instance.random_hex_token)
 random_urlsafe_token = warnold(_random_instance.random_urlsafe_token)

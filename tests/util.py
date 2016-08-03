@@ -3,6 +3,7 @@ import six
 
 from humancrypto import yearutil, pwutil
 from humancrypto.error import VerifyMismatchError, PasswordMatchesWrongYear
+from humancrypto.error import InsecureLength
 
 
 class PasswordHashingMixin(object):
@@ -101,6 +102,10 @@ class RandomTokenMixin(object):
         assert token1 != token2
         assert isinstance(token1, six.binary_type)
 
+    def test_token(self):
+        token = self.get_module().random_token()
+        assert isinstance(token, six.binary_type)
+
     def test_hex(self):
         token = self.get_module().random_hex_token()
         assert isinstance(token, six.text_type)
@@ -108,3 +113,12 @@ class RandomTokenMixin(object):
     def test_urlsafe(self):
         token = self.get_module().random_urlsafe_token()
         assert isinstance(token, six.text_type)
+
+    def test_too_short(self):
+        m = self.get_module()
+        with pytest.raises(InsecureLength):
+            m.random_hex_token(1)
+        with pytest.raises(InsecureLength):
+            m.random_token(1)
+        with pytest.raises(InsecureLength):
+            m.random_urlsafe_token(1)

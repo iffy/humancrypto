@@ -12,3 +12,7 @@ class VerifyMismatchError(Error):
 
 class UnknownCryptography(Error):
     pass
+
+
+class InsecureLength(Error):
+    pass
