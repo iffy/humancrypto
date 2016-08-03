@@ -6,11 +6,16 @@
 
 **DON'T USE THIS IN PRODUCTION!  It's just an idea right now.**
 
-Stay up to date with cryptography best practices:
+Use cryptographic best practices:
 
 - If it's 2016, use the `y2016` module.
 - If it's 44 B.C., use the `y44bc` module.
 
+Use it for:
+
+- [password hashing](#password-hashing)
+- [random token generation](#random-tokens)
+- [RSA certificates and keys](#RSA)
 
 ## Installation
 
