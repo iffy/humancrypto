@@ -136,17 +136,24 @@ def add_year(parser, name, key, deprecated=False):
         '--urlsafe',
         action='store_true',
         help='Output in a URL safe format')
+    token.add_argument(
+        '-L',
+        '--length',
+        type=int,
+        default=None,
+        help="Byte size of token to generate."
+             "  Defaults to a secure amount.")
 
     @do(token)
     def make_token(args):
         module = yearutil.get_module(key)
         ret = None
         if args.hex:
-            ret = module.random_hex_token()
+            ret = module.random_hex_token(args.length)
         elif args.urlsafe:
-            ret = module.random_urlsafe_token()
+            ret = module.random_urlsafe_token(args.length)
         else:
-            ret = module.random_bytes()
+            ret = module.random_token(args.length)
         out(ret)
 
 
