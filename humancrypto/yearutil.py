@@ -24,21 +24,20 @@ def get_module(year):
 _current_year = date.today().year
 
 
-def for_year(year):
+def for_year(year, msg=None):
     """
     Decorate a function so that it will emit warnings once
     the given year is in the past.
     """
-    # By getting the current year here, I'm assuming that no
-    # process will run longer than a year.  That may be a bad
-    # assumption.
+    msg = msg or (
+        'You are using cryptography designed for the year {0}.'
+        '  Consider updating.'.format(year))
+
     def deco(f):
         @wraps(f)
         def inner(*args, **kwargs):
             if year < _current_year:
-                warnings.warn(
-                    'You are using cryptography designed for the year {0}.'
-                    '  Consider updating.'.format(year))
+                warnings.warn(msg)
             return f(*args, **kwargs)
         return inner
     return deco
