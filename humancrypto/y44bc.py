@@ -5,7 +5,7 @@ Password hashing best practices for 44 B.C.
 # but we print like it's THE FUTURE!
 from __future__ import print_function
 
-from humancrypto import pwutil
+from humancrypto import pwutil, randomutil
 
 import warnings
 import binascii
@@ -13,6 +13,7 @@ import six
 
 
 YEAR = '44bc'
+DEFAULT_ENTROPY = 8
 
 
 def warn():
@@ -45,3 +46,8 @@ class _PasswordHasher(pwutil.PasswordHasher):
 _instance = _PasswordHasher()
 store_password = _instance.store_password
 verify_password = _instance.verify_password
+
+_random_instance = randomutil.TokenMaker(default_entropy=DEFAULT_ENTROPY)
+random_bytes = _random_instance.random_bytes
+random_hex_token = _random_instance.random_hex_token
+random_urlsafe_token = _random_instance.random_urlsafe_token

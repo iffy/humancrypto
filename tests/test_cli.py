@@ -9,6 +9,26 @@ from humancrypto import PrivateKey, PublicKey, Certificate, CSR
 from humancrypto.error import VerifyMismatchError
 
 
+class Test_token(object):
+
+    def do(self, args, stdin=None):
+        stdout = six.StringIO()
+        stderr = six.StringIO()
+        if stdin:
+            stdin = six.StringIO(stdin)
+        main(args, stdin=stdin, stdout=stdout, stderr=stderr)
+        return stdout.getvalue(), stderr.getvalue()
+
+    def test_bytes(self):
+        self.do(['2016', 'token'])
+
+    def test_hex(self):
+        self.do(['2016', 'token', '--hex'])
+
+    def test_urlsafe(self):
+        self.do(['2016', 'token', '--urlsafe'])
+
+
 class Test_pw(object):
 
     def do(self, args, stdin=None):
@@ -16,33 +36,33 @@ class Test_pw(object):
         stderr = six.StringIO()
         if stdin:
             stdin = six.StringIO(stdin)
-        main(['pw'] + args, stdin=stdin, stdout=stdout, stderr=stderr)
+        main(args, stdin=stdin, stdout=stdout, stderr=stderr)
         return stdout.getvalue(), stderr.getvalue()
 
     def test_store2016(self):
         stored, _ = self.do(
-            ['2016', 'store'],
+            ['2016', 'pw', 'store'],
             stdin='password')
         result, _ = self.do(
-            ['2016', 'verify', stored],
+            ['2016', 'pw', 'verify', stored],
             stdin='password')
         assert result == 'ok\n'
 
     def test_store2016_wrong_password(self):
         stored, _ = self.do(
-            ['2016', 'store'],
+            ['2016', 'pw', 'store'],
             stdin='password')
         with pytest.raises(VerifyMismatchError):
             self.do(
-                ['2016', 'verify', stored],
+                ['2016', 'pw', 'verify', stored],
                 stdin='wrong')
 
     def test_store44BC(self):
         stored, _ = self.do(
-            ['44bc', 'store'],
+            ['44bc', 'pw', 'store'],
             stdin='password')
         result, _ = self.do(
-            ['44bc', 'verify', stored],
+            ['44bc', 'pw', 'verify', stored],
             stdin='password')
         assert result == 'ok\n'
 
