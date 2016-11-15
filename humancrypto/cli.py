@@ -185,6 +185,7 @@ rsa = rsa_parser.add_subparsers(
     title='subcommands',
     dest='subcommand')
 
+
 # --------------------------------------------------------
 # create-private
 # --------------------------------------------------------
@@ -200,6 +201,7 @@ p.add_argument(
 def create_private(args):
     PrivateKey.create().save(args.filename)
     out('wrote', args.filename)
+
 
 # --------------------------------------------------------
 # extract-public
@@ -220,6 +222,7 @@ def extract_public(args):
     pub = PrivateKey.load(filename=args.privatekey).public_key
     pub.save(args.publickey)
     out('wrote', args.publickey)
+
 
 # --------------------------------------------------------
 # self-signed-cert
@@ -243,6 +246,7 @@ def self_signed_cert(args):
     cert = priv.self_signed_cert(attribs)
     cert.save(args.certfile)
     out('wrote', args.certfile)
+
 
 # --------------------------------------------------------
 # create-csr
