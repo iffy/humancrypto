@@ -23,6 +23,7 @@ from .error import Error
 def reverse_dict(x):
     return {v: k for k, v in x.items()}
 
+
 OID_MAPPING = {
     'common_name': NameOID.COMMON_NAME,
     'country': NameOID.COUNTRY_NAME,
