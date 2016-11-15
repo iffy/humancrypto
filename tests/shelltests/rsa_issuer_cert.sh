@@ -1,0 +1,61 @@
+#!/bin/bash
+
+hc=${1:-$(which humancrypto)}
+
+if [ -z "$hc" ]; then
+    echo "usage: $0 path-to-humancrypto-executable"
+    exit 1
+fi
+
+set -xe
+TMPDIR=$(mktemp -d -t rsa)
+
+cat <<EOF > "${TMPDIR}/ca.crt"
+-----BEGIN CERTIFICATE-----
+MIIDOjCCAqOgAwIBAgIJAIPUjfhlOjCkMA0GCSqGSIb3DQEBBQUAMHIxCzAJBgNV
+BAYTAlVTMQswCQYDVQQIEwJVVDENMAsGA1UEBxMET3JlbTELMAkGA1UEChMCU00x
+DjAMBgNVBAMTBVNNIENBMSowKAYJKoZIhvcNAQkBFhtzdXBwb3J0QHNlY3VyaXR5
+bWV0cmljcy5jb20wHhcNMTYxMTEwMjEzODE4WhcNMjYxMTA4MjEzODE4WjByMQsw
+CQYDVQQGEwJVUzELMAkGA1UECBMCVVQxDTALBgNVBAcTBE9yZW0xCzAJBgNVBAoT
+AlNNMQ4wDAYDVQQDEwVTTSBDQTEqMCgGCSqGSIb3DQEJARYbc3VwcG9ydEBzZWN1
+cml0eW1ldHJpY3MuY29tMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC19+MA
+SvoAqK7zB/bSMQYIUVL3HckS/H535RLCM13F5W04qk96lGiEguY+izhRAnCo5bLJ
+qIDzPWvsw3J5EZayNscdZOwzZjLXuPDfgsGlq2RkcoIR+YxNRxiGrz5e8st2YmRJ
+M1cqQehMEM1YBPg6gzdvY9eiNcNorzUijneBUwIDAQABo4HXMIHUMB0GA1UdDgQW
+BBRrrz2FXX8/q8M6gVGNem4prPO4eDCBpAYDVR0jBIGcMIGZgBRrrz2FXX8/q8M6
+gVGNem4prPO4eKF2pHQwcjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMQ0wCwYD
+VQQHEwRPcmVtMQswCQYDVQQKEwJTTTEOMAwGA1UEAxMFU00gQ0ExKjAoBgkqhkiG
+9w0BCQEWG3N1cHBvcnRAc2VjdXJpdHltZXRyaWNzLmNvbYIJAIPUjfhlOjCkMAwG
+A1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADgYEAllRqFNrHDiHNKNMTJ6zugkLb
+KXLTMTyzljwokUXZySns1Hd6WVV4THQNCnldno6qPHJuPHR0/wJvb3IzjZxiMH8W
+eLDrd2WDr2n9ZWHa49FCVAy7WPAvo0W9RfrLlSZusUuoJSZLjb3ArEeIqGpyb3Xb
+w2d8qulciK6pgRiCX5E=
+-----END CERTIFICATE-----
+EOF
+
+cat <<EOF > "${TMPDIR}/ca.key"
+-----BEGIN PRIVATE KEY-----
+MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBALX34wBK+gCorvMH
+9tIxBghRUvcdyRL8fnflEsIzXcXlbTiqT3qUaISC5j6LOFECcKjlssmogPM9a+zD
+cnkRlrI2xx1k7DNmMte48N+CwaWrZGRyghH5jE1HGIavPl7yy3ZiZEkzVypB6EwQ
+zVgE+DqDN29j16I1w2ivNSKOd4FTAgMBAAECgYB9KkgrUGdMgrrsEmNVS0FCAWZW
+8lb3x1PadmgDyr9Kuzf4jTVkNKb71uo2xR50ooAJvQ3QpiYkqfANiJa57j4/qG40
+GycWTlWkBYMsUH1V+Idrxg/E9sM5MqpYY+k8nbWJCRAgBHUqWvLaprhiTMTj2/f2
+M+eADiCwZznyf8hmUQJBANyTK64rCscmk02qi8IaPVxEcq45MLH5lQ1JojaOulqY
+cbvzBI2hLA/BYpNj53ad8z+bSi1EtzZtyokjV6nvkWsCQQDTMWzmI2mo2CfNVlHq
+HK4h1UsVAHNvVfpnI9CQu5ahYCTxWieNB390AOk4P4SM+Lpe9Hf3lzeV3fRJezNV
+0gG5AkBjL5KuyRAZqZEHla8u41nASc8/5NuuzEpoJTpaSigmYPKTz522ikkj9JP9
+LymAP1qIua3LWWEBirFOpaPf+KhtAkAnY317ArnPGtl5i5LlhgnYF47UUOw2pKN6
+HwzkIYh7epIJTZY40GAuA4l7yyTuoekokpHZZKOiWO4Z0leFtxBJAkAg6yR9ZVUT
+zxe//TU9vu5/VQAmHkwOVvaHnSsxtomSsPlKbPItOwkypXa2/Q9Y6OiFQO1xldo6
+GWGiD7liS5bZ
+-----END PRIVATE KEY-----
+EOF
+
+# verify the modulus matches
+[ $(openssl x509 -noout -modulus -in ./ca.crt) = $(openssl rsa -noout -modulus -in ./ca.key) ] || (echo modulus does not match && exit 1)
+
+$hc rsa create-private "${TMPDIR}/1.key"
+$hc rsa create-csr "${TMPDIR}/1.key" "${TMPDIR}/1.csr"
+$hc rsa sign-csr "${TMPDIR}/ca.key" "${TMPDIR}/ca.crt" "${TMPDIR}/1.csr" "${TMPDIR}/1.crt"
+openssl verify -verbose -CAfile "${TMPDIR}/ca.crt" "${TMPDIR}/1.crt"

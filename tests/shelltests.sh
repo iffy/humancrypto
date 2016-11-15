@@ -7,11 +7,16 @@ if [ -z "$hc" ]; then
     exit 1
 fi
 
-set -xe
-$hc --help
-echo 'mypassword' | $hc y2016 pw store > /tmp/stored.txt
-echo 'mypassword' | $hc y2016 pw verify "$(cat /tmp/stored.txt)"
+rc=0
+testdir=$(dirname $0)/shelltests
+for i in $(ls "$testdir"); do
+    fp="${testdir}/${i}"
+    if $fp $hc; then
+        echo PASS $i 
+    else
+        echo FAIL $i
+    fi
+    
+done
 
-$hc y2016 token
-$hc y2016 token --hex
-$hc y2016 token --urlsafe
+exit $rc

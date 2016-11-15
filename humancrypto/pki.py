@@ -8,6 +8,8 @@ from cryptography.x509.general_name import DirectoryName, DNSName, IPAddress
 from cryptography.x509 import KeyUsage, ExtendedKeyUsage
 from cryptography.x509 import SubjectAlternativeName
 
+from collections import OrderedDict
+
 import ipaddress
 
 import os
@@ -16,6 +18,9 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 
 from .error import Error
+
+def reverse_dict(x):
+    return {v:k for k,v in x.items()}
 
 OID_MAPPING = {
     'common_name': NameOID.COMMON_NAME,
@@ -27,6 +32,7 @@ OID_MAPPING = {
     'name': NameOID.GIVEN_NAME,
     'email': NameOID.EMAIL_ADDRESS,
 }
+OID_2NAME = reverse_dict(OID_MAPPING)
 
 
 EXT_MAPPING = {
@@ -245,6 +251,7 @@ class PrivateKey(object):
 
         path_length = None
         if is_ca:
+            # the buck stops here
             path_length = 0
         builder = builder.add_extension(
             x509.BasicConstraints(ca=is_ca, path_length=path_length),
@@ -314,7 +321,7 @@ class PublicKey(object):
 
 
 def _attribDict2x509List(attribs):
-    attribs = attribs or {}
+    attribs = attribs or OrderedDict()
     attrib_list = []
     for nice_name, values in attribs.items():
         oid = OID_MAPPING[nice_name]
@@ -326,7 +333,7 @@ def _attribDict2x509List(attribs):
 
 
 def _extAttribDict2x509List(extensions):
-    extensions = extensions or {}
+    extensions = extensions or OrderedDict()
     ext_list = []
 
     # SubjectAlternativeName
@@ -357,9 +364,10 @@ def _extAttribDict2x509List(extensions):
 
 
 def _x509Name2attribDict(instance):
-    a = {}
-    for name, oid in OID_MAPPING.items():
-        values = instance.get_attributes_for_oid(oid)
+    a = OrderedDict()
+    for x in instance:
+        name = OID_2NAME[x.oid]
+        values = instance.get_attributes_for_oid(x.oid)
         if len(values) == 1:
             a[name] = values[0].value
         else:
