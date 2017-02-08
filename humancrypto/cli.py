@@ -268,6 +268,10 @@ p.add_argument(
     '--client',
     action='store_true',
     help='If given, use sane client-certificate defaults.')
+p.add_argument(
+    '--codesign',
+    action='store_true',
+    help='If given, use sane code-signing defaults.')
 _acceptBasicAttributes(p)
 _acceptSomeExtendedAttributes(p)
 
@@ -281,7 +285,8 @@ def create_csr(args):
         attribs,
         extensions=extensions,
         server=args.server,
-        client=args.client)
+        client=args.client,
+        code_signing=args.codesign)
     csr.save(args.csr)
     out('wrote', args.csr)
 

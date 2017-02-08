@@ -233,6 +233,37 @@ class TestCertificate(object):
         assert cert.extensions['key_usage']['key_cert_sign'] is True
         assert cert.extensions['key_usage']['crl_sign'] is True
 
+    def test_self_signed_code_signing(self):
+        """
+        You can create code-signing certificates
+        """
+        priv = PrivateKey.create()
+        cert = priv.self_signed_cert({'common_name': u'CA'}, code_signing=True)
+
+        # Basic Constraints
+        assert cert.extensions['basic_constraints']['ca'] is True
+
+        # Subject Key Identifier
+        assert cert.extensions['subject_key_identifier'] is not None
+
+        # Authority Key Identifier
+        assert cert.extensions['authority_key_identifier'] is not None
+        aki = cert.extensions['authority_key_identifier']
+        assert aki['keyid'] == cert.extensions['subject_key_identifier']
+        assert aki['serial'] == cert.serial_number
+        assert aki['issuer'] == cert.issuer.attribs
+
+        # Key Usage
+        assert cert.extensions['key_usage']['key_cert_sign'] is True
+        assert cert.extensions['key_usage']['crl_sign'] is True
+
+        # Extended Key Usage
+        assert cert.extensions['extended_key_usage']['server_auth'] is False
+        assert cert.extensions['extended_key_usage']['code_signing'] is True
+        assert cert.extensions['extended_key_usage']['msCodeInd'] is True
+        assert cert.extensions['extended_key_usage']['msCodeCom'] is True
+        assert cert.extensions['extended_key_usage']['client_auth'] is True
+
     def test_server_cert(self):
         """
         Certificates for servers should have the right x509 extensions

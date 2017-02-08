@@ -11,11 +11,18 @@ rc=0
 testdir=$(dirname $0)/shelltests
 for i in $(ls "$testdir"); do
     fp="${testdir}/${i}"
+    
     if $fp $hc; then
-        echo PASS $i 
+        echo ------------------
+        echo PASS $i
+        echo
     else
+        echo ------------------
         echo FAIL $i
+        echo
+        rc=1
     fi
+    
     
 done
 

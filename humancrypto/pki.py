@@ -4,6 +4,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography import x509
 from cryptography.x509.oid import NameOID, ExtensionOID, ExtendedKeyUsageOID
+from cryptography.x509.oid import ObjectIdentifier
 from cryptography.x509.general_name import DirectoryName, DNSName, IPAddress
 from cryptography.x509 import KeyUsage, ExtendedKeyUsage
 from cryptography.x509 import SubjectAlternativeName
@@ -120,6 +121,9 @@ EXT_KEY_USAGE_MAPPING = {
     'email_protection': ExtendedKeyUsageOID.EMAIL_PROTECTION,
     'time_stamping': ExtendedKeyUsageOID.TIME_STAMPING,
     'ocsp_signing': ExtendedKeyUsageOID.OCSP_SIGNING,
+    # NOQA from https://support.microsoft.com/en-us/help/287547/object-ids-associated-with-microsoft-cryptography
+    'msCodeInd': ObjectIdentifier('1.3.6.1.4.1.311.2.1.21'),
+    'msCodeCom': ObjectIdentifier('1.3.6.1.4.1.311.2.1.22'),
 }
 
 
@@ -265,12 +269,12 @@ class PrivateKey(object):
         )
         return Certificate(certificate)
 
-    def self_signed_cert(self, attribs=None):
+    def self_signed_cert(self, attribs=None, code_signing=False):
         # for a CA
         csr = CSR.create(self, attribs, key_usage={
             'crl_sign': True,
             'key_cert_sign': True,
-        })
+        }, code_signing=code_signing)
         return self._sign_csr(csr, is_ca=True)
 
     def sign_csr(self, csr, cert):
@@ -455,7 +459,8 @@ class CSR(object):
             key_usage=None,
             extended_key_usage=None,
             server=None,
-            client=None):
+            client=None,
+            code_signing=None):
         """
         @param private_key: A PrivateKey instance
         @param attribs: A dictionary of attributes to put in the certificate's
@@ -472,6 +477,9 @@ class CSR(object):
 
         @param client: If True, this certificate is for a web client and
             key_usage/extended_key_usage will be set to sane defaults.
+
+        @param code_signing: If True, this certificate is for code signing
+            and key_usage/extended_key_usage will be set to sane defaults.
         """
         attrib_list = _attribDict2x509List(attribs)
         ext_list = _extAttribDict2x509List(extensions)
@@ -486,6 +494,13 @@ class CSR(object):
         if client:
             key_usage['digital_signature'] = True
             extended_key_usage['client_auth'] = True
+
+        if code_signing:
+            key_usage['digital_signature'] = True
+            extended_key_usage['client_auth'] = True
+            extended_key_usage['code_signing'] = True
+            extended_key_usage['msCodeInd'] = True
+            extended_key_usage['msCodeCom'] = True
 
         builder = x509.CertificateSigningRequestBuilder()
         builder = builder.subject_name(x509.Name(attrib_list))
